@@ -1,0 +1,20 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+civiewer.toml
+
+# Local planning and agent work
+docs/superpowers/
+.superpowers/
+.impeccable/
+
+# Build outputs
+/civiewer
+frontend/node_modules/
+frontend/dist/
+internal/web/dist/*
+!internal/web/dist/.keep
+frontend/test-results/
+frontend/playwright-report/
+.DS_Store
