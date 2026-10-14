@@ -14,14 +14,14 @@ cp civiewer.example.toml civiewer.toml
 
 Edit `civiewer.toml` with your source selections and credential references.
 See [configuration](docs/configuration.md) and [credentials](docs/credentials.md).
-Start both development services:
+Start the API and frontend in separate terminals:
 
 ```shell
-just dev
+just api
+just frontend
 ```
 
-Open `http://127.0.0.1:5173`. Both services stop when either exits or you press
-Ctrl+C. `just api` and `just frontend` are also available separately.
+Open `http://127.0.0.1:5173`.
 
 ## Build
 

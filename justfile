@@ -6,11 +6,7 @@ api:
 frontend:
     pnpm --dir frontend dev
 
-dev:
-    node scripts/dev.mjs
-
 check:
-    node --test scripts/dev.test.mjs
     pnpm --dir frontend install --frozen-lockfile
     pnpm --dir frontend test
     pnpm --dir frontend check
