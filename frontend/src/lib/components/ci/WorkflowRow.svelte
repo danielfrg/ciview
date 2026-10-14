@@ -4,10 +4,11 @@
  let { workflow, now }: { workflow: Workflow; now: number } = $props();
  let latest = $derived(workflow.latest_run);
  let latestURL = $derived(latest ? safeURL(latest.url) : null);
+ let repositoryURL = $derived(safeURL(workflow.repository.url));
 </script>
 <article class="workflow-row" aria-label={`${workflow.repository.full_name}, ${workflow.name}`}>
  <div class="workflow-identity">
-  <h4 class="workflow-title">{#if latestURL}<a href={latestURL} target="_blank" rel="noopener noreferrer">{workflow.name}</a>{:else}{workflow.name}{/if}</h4>
+  <h3 class="workflow-title">{#if repositoryURL}<a href={repositoryURL} target="_blank" rel="noopener noreferrer">{workflow.repository.full_name}</a>{:else}{workflow.repository.full_name}{/if} - {#if latestURL}<a href={latestURL} target="_blank" rel="noopener noreferrer">{workflow.name}</a>{:else}{workflow.name}{/if}</h3>
   <div class="workflow-scope">{workflow.branch_scope === 'all' ? 'All branches' : workflow.branch_scope}</div>
   {#if workflow.health.state !== 'healthy' && workflow.health.state !== 'ok'}<p class="row-notice">{workflow.health.state === 'loading' ? 'Loading repository' : 'Stale data'}{workflow.health.message ? ` · ${workflow.health.message}` : ''}{#if workflow.health.last_success_at} · Updated {relativeTime(workflow.health.last_success_at, now)}{/if}{#if workflow.health.retry_at} · Retry {absoluteTime(workflow.health.retry_at)}{/if}</p>{/if}
  </div>

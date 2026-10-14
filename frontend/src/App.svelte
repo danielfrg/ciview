@@ -5,7 +5,7 @@
  import { Select } from '$lib/components/ui/select';
  import WorkflowRow from '$lib/components/ci/WorkflowRow.svelte';
  import SourceNotices from '$lib/components/ci/SourceNotices.svelte';
- import { parseOverview, filterWorkflows, groupWorkflows, readFilters, writeFilters, safeURL, states, statusLabel, type RunState, type Filters, type Overview } from '$lib/ci';
+ import { parseOverview, filterWorkflows, groupWorkflows, readFilters, writeFilters, states, statusLabel, type RunState, type Filters, type Overview } from '$lib/ci';
  let overview = $state<Overview | null>(null);
  let filters = $state<Filters>(readFilters(new URLSearchParams(location.search)));
  let loading = $state(true);
@@ -80,11 +80,8 @@
       <h2 class="source-heading">{source.name}</h2>
       <div class="repository-groups">
        {#each source.repositories as group (group.repository.key)}
-        {@const repositoryURL = safeURL(group.repository.url)}
         <section class="repository-group" aria-label={group.repository.full_name}>
-         <h3 class="repository-heading">{#if repositoryURL}<a href={repositoryURL} target="_blank" rel="noopener noreferrer">{group.repository.full_name}</a>{:else}{group.repository.full_name}{/if}</h3>
          <div class="repository-panel">
-          <div class="list-heading"><span>Workflow</span><span class="history-heading">Recent runs</span><span class="summary-heading">Latest metrics</span><span class="state-heading">Status</span></div>
           {#each group.workflows as workflow (workflow.key)}<WorkflowRow {workflow} {now}/>{/each}
          </div>
         </section>

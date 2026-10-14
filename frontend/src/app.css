@@ -59,11 +59,10 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .source-group, .repository-group { min-width: 0; }
 .source-heading { margin: 0 0 16px; font-size: 1.125rem; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
 .repository-groups { display: grid; gap: 24px; }
-.repository-heading { margin: 0 0 12px; font-size: 1rem; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
 .repository-panel, .workflow-state { background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
-.list-heading, .workflow-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(270px, 1.2fr) minmax(265px, 1fr) 100px; align-items: center; column-gap: 24px; padding-inline: 24px; }
-.list-heading { min-height: 48px; color: var(--muted-foreground); font-size: .6875rem; font-weight: 550; background: var(--background); border-radius: 8px 8px 0 0; }
+.workflow-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(270px, 1.2fr) minmax(265px, 1fr) 100px; align-items: center; column-gap: 24px; padding-inline: 24px; }
 .workflow-row { min-height: 118px; padding-block: 22px; border-top: 1px solid var(--border); }
+.workflow-row:first-child { border-top: 0; }
 .workflow-identity, .workflow-history { min-width: 0; }
 .workflow-title { margin: 0 0 4px; font-size: .9375rem; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
 .workflow-scope { color: var(--muted-foreground); font-size: .6875rem; overflow-wrap: anywhere; }
@@ -103,12 +102,11 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .skeleton-row:first-of-type { border-top: 0; }
 .skeleton-row div { background: var(--muted); border-radius: 3px; height: 28px; }
 @media (max-width: 1190px) {
- .list-heading, .workflow-row { grid-template-columns: minmax(210px, 1fr) minmax(240px, 1fr); }
+ .workflow-row { grid-template-columns: minmax(210px, 1fr) minmax(240px, 1fr); }
  .workflow-row { gap: 16px 28px; }
  .workflow-history { grid-column: 2; grid-row: 1; }
  .workflow-metrics { grid-column: 1; grid-row: 2; }
  .latest-state { grid-column: 2; grid-row: 2; justify-self: end; }
- .summary-heading, .state-heading { display: none; }
  .filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
  .search-label { grid-column: 1 / -1; }
 }
@@ -121,8 +119,6 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
  .refresh-button { height: 40px; }
  .filters { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
  .filters input, .filters select { font-size: 1rem; }
- .list-heading { display: flex; justify-content: space-between; padding: 12px 18px; gap: 12px; }
- .history-heading { font-weight: 400; }
  .workflow-row { display: flex; flex-wrap: wrap; gap: 14px 8px; padding: 20px 18px; }
  .workflow-identity, .workflow-history { flex: 0 0 100%; }
  .workflow-identity { order: 0; }
