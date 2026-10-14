@@ -40,7 +40,7 @@ Use the system sans-serif stack, a 1.5rem semibold page heading, .9375rem workfl
 titles and compact supporting labels. Metric numerals are tabular. Source
 headings separate configured sources. Bordered repository panels contain rows
 without repository or column headings. Each row title combines the repository
-link, a hyphen, and the workflow run link; branch scope stays on the next line.
+link, a hyphen, and the workflow history link; branch scope stays on the next line.
 Spacing and row separators establish grouping without shadows.
 
 ## Interaction and states
@@ -53,7 +53,8 @@ failure and expose Retry; upstream health remains separately visible.
 History shows the server's complete displayed sample, normally 30 runs, oldest
 to newest. Each colored bar has constant 28px visual height inside a 44px link
 area. Hover and focus reveal exact title, branch, status, local time and known
-execution duration. Links open provider pages in a new tab. No inferred run
+execution duration. Workflow names open provider workflow history; history bars
+and latest status open individual runs. Links open provider pages in a new tab. No inferred run
 links or invented metrics. Missing metrics use an em dash; zero duration is 0s.
 
 Keep initial loading, collection in progress, no observed workflows, no filter

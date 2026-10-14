@@ -24,6 +24,7 @@ type Run struct {
 	ID               string     `json:"id"`
 	WorkflowID       string     `json:"workflow_id"`
 	WorkflowName     string     `json:"workflow_name"`
+	WorkflowURL      string     `json:"workflow_url,omitempty"`
 	Title            string     `json:"title"`
 	Branch           string     `json:"branch"`
 	HeadRepositoryID string     `json:"head_repository_id,omitempty"`
@@ -140,6 +141,7 @@ type Workflow struct {
 	Key                     string     `json:"key"`
 	Repository              Repository `json:"repository"`
 	WorkflowID              string     `json:"workflow_id"`
+	WorkflowURL             string     `json:"workflow_url"`
 	Name                    string     `json:"name"`
 	BranchScope             string     `json:"branch_scope"`
 	Runs                    []Run      `json:"runs"`

@@ -113,11 +113,14 @@ func (s *OverviewService) workflows(snapshot RepositorySnapshot) []Workflow {
 		if name == "" {
 			name = workflowID
 		}
-		row := Workflow{Key: stableKey(snapshot.Repository.Key, workflowID), Repository: snapshot.Repository, WorkflowID: workflowID, Name: name, BranchScope: branchScope, Runs: owned, LatestRun: &latest, Coverage: copyCoverage(snapshot.Coverage), Health: copyHealth(snapshot.Health)}
+		row := Workflow{Key: stableKey(snapshot.Repository.Key, workflowID), Repository: snapshot.Repository, WorkflowID: workflowID, WorkflowURL: latest.WorkflowURL, Name: name, BranchScope: branchScope, Runs: owned, LatestRun: &latest, Coverage: copyCoverage(snapshot.Coverage), Health: copyHealth(snapshot.Health)}
 		success, eligible := 0, 0
 		selectedCompleted := false
 		for i := len(owned) - 1; i >= 0; i-- {
 			run := owned[i]
+			if row.WorkflowURL == "" {
+				row.WorkflowURL = run.WorkflowURL
+			}
 			if run.Terminal && !selectedCompleted {
 				selectedCompleted = true
 				row.LastCompletedDurationMS = copyInt64(run.DurationMS)

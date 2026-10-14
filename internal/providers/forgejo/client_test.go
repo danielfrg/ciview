@@ -3,10 +3,12 @@ package forgejo
 import (
 	"civiewer/internal/ci"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -232,6 +234,73 @@ func TestInstanceCappedOrgPagesPreserveCompleteDiscovery(t *testing.T) {
 			d, e := c.Discover(context.Background(), ci.Selection{Orgs: []string{"acme"}})
 			if e != nil || !d.Complete || len(d.Repositories) != total || calls != (total+9)/10 {
 				t.Fatalf("capped discovery=%+v requests=%d err=%v", d, calls, e)
+			}
+		})
+	}
+}
+
+func TestWorkflowHistoryURLUsesFilenameInListAndGet(t *testing.T) {
+	for _, tc := range []struct{ name, repositoryURL, filename, want string }{
+		{"file", "https://forge.example/acme/project", "check.yml", "https://forge.example/acme/project/actions?workflow=check.yml"},
+		{"instance_prefix", "https://forge.example/forge/acme/project/", "check.yaml", "https://forge.example/forge/acme/project/actions?workflow=check.yaml"},
+		{"encoded_filename", "https://forge.example/forge/acme/project?tab=readme#intro", "check #?%+.yml", "https://forge.example/forge/acme/project/actions?workflow=check+%23%3F%25%2B.yml"},
+		{"display_name", "https://forge.example/acme/project", "Checks", ""},
+		{"numeric_identity", "https://forge.example/acme/project", "77", ""},
+		{"traversal", "https://forge.example/acme/project", "../check.yml", ""},
+		{"subdirectory", "https://forge.example/acme/project", "nested/check.yml", ""},
+		{"backslash", "https://forge.example/acme/project", "check\\name.yml", ""},
+		{"absolute_url", "https://forge.example/acme/project", "https://other.example/check.yml", ""},
+		{"unsafe_repository", "javascript:alert(1)", "check.yml", ""},
+		{"repository_auth", "https://user:secret@forge.example/acme/project", "check.yml", ""},
+		{"repository_traversal", "https://forge.example/forge/../acme/project", "check.yml", ""},
+		{"encoded_repository_traversal", "https://forge.example/forge/%2e%2e/acme/project", "check.yml", ""},
+		{"missing_repository", "", "check.yml", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture := fmt.Sprintf(`{"id":9,"workflow_id":%q,"title":"Friendly display name","html_url":"https://forge.example/acme/project/actions/runs/9","status":"success"}`, tc.filename)
+			var calls atomic.Int32
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls.Add(1)
+				switch r.URL.Path {
+				case "/api/v1/repos/acme/project/actions/runs":
+					fmt.Fprintf(w, `{"total_count":1,"workflow_runs":[%s]}`, fixture)
+				case "/api/v1/repos/acme/project/actions/runs/9":
+					fmt.Fprint(w, fixture)
+				default:
+					t.Errorf("unexpected request %s", r.URL.Path)
+					http.NotFound(w, r)
+				}
+			}))
+			defer s.Close()
+			c, err := New("forge", s.URL, "", s.Client())
+			if err != nil {
+				t.Fatal(err)
+			}
+			repo := ci.Repository{Owner: "acme", Name: "project", URL: tc.repositoryURL}
+			page, err := c.ListRuns(context.Background(), repo, 1)
+			if err != nil || len(page.Runs) != 1 {
+				t.Fatalf("list=%#v err=%v", page, err)
+			}
+			detail, err := c.GetRun(context.Background(), repo, "9")
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, run := range []ci.Run{page.Runs[0], detail} {
+				body, err := json.Marshal(run)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var wire map[string]any
+				if err := json.Unmarshal(body, &wire); err != nil {
+					t.Fatal(err)
+				}
+				got, _ := wire["workflow_url"].(string)
+				if got != tc.want || run.URL != "https://forge.example/acme/project/actions/runs/9" || run.WorkflowID != tc.filename || repo.URL != tc.repositoryURL {
+					t.Errorf("workflow URL=%q want=%q run=%#v", got, tc.want, run)
+				}
+			}
+			if calls.Load() != 2 {
+				t.Errorf("workflow links fetched additional metadata: requests=%d", calls.Load())
 			}
 		})
 	}

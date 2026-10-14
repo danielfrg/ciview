@@ -387,3 +387,68 @@ func TestListAndGetRunPreserveHeadRepositoryIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkflowHistoryURLUsesPathInListAndGet(t *testing.T) {
+	for _, tc := range []struct{ name, repositoryURL, workflowPath, want string }{
+		{"file", "https://github.com/acme/project", ".github/workflows/check.yml", "https://github.com/acme/project/actions/workflows/check.yml"},
+		{"instance_prefix", "https://github.example/git/acme/project/", ".github/workflows/check.yaml", "https://github.example/git/acme/project/actions/workflows/check.yaml"},
+		{"encoded_filename", "https://github.example/git/acme/project?tab=readme#intro", ".github/workflows/check #?%+.yml", "https://github.example/git/acme/project/actions/workflows/check%20%23%3F%25+.yml"},
+		{"missing_path", "https://github.com/acme/project", "", ""},
+		{"display_name", "https://github.com/acme/project", "Checks", ""},
+		{"generated", "https://github.com/acme/project", "dynamic/pages/pages-build-deployment", ""},
+		{"numeric_path", "https://github.com/acme/project", "77", ""},
+		{"different_directory", "https://github.com/acme/project", ".gitlab/workflows/check.yml", ""},
+		{"traversal", "https://github.com/acme/project", ".github/workflows/../check.yml", ""},
+		{"subdirectory", "https://github.com/acme/project", ".github/workflows/nested/check.yml", ""},
+		{"backslash", "https://github.com/acme/project", ".github/workflows/check\\name.yml", ""},
+		{"absolute_url", "https://github.com/acme/project", "https://other.example/check.yml", ""},
+		{"unsafe_repository", "javascript:alert(1)", ".github/workflows/check.yml", ""},
+		{"repository_auth", "https://user:secret@github.example/acme/project", ".github/workflows/check.yml", ""},
+		{"repository_traversal", "https://github.example/git/../acme/project", ".github/workflows/check.yml", ""},
+		{"encoded_repository_traversal", "https://github.example/git/%2e%2e/acme/project", ".github/workflows/check.yml", ""},
+		{"missing_repository", "", ".github/workflows/check.yml", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture := fmt.Sprintf(`{"id":9,"workflow_id":77,"name":"Friendly display name","path":%q,"html_url":"https://github.com/acme/project/actions/runs/9","status":"completed","conclusion":"success"}`, tc.workflowPath)
+			var calls atomic.Int32
+			c, _ := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+				calls.Add(1)
+				switch r.URL.Path {
+				case "/repos/acme/project/actions/runs":
+					fmt.Fprintf(w, `{"total_count":1,"workflow_runs":[%s]}`, fixture)
+				case "/repos/acme/project/actions/runs/9":
+					fmt.Fprint(w, fixture)
+				default:
+					t.Errorf("unexpected request %s", r.URL.Path)
+					http.NotFound(w, r)
+				}
+			})
+			repo := ci.Repository{Owner: "acme", Name: "project", URL: tc.repositoryURL}
+			page, err := c.ListRuns(context.Background(), repo, 1)
+			if err != nil || len(page.Runs) != 1 {
+				t.Fatalf("list=%#v err=%v", page, err)
+			}
+			detail, err := c.GetRun(context.Background(), repo, "9")
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, run := range []ci.Run{page.Runs[0], detail} {
+				body, err := json.Marshal(run)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var wire map[string]any
+				if err := json.Unmarshal(body, &wire); err != nil {
+					t.Fatal(err)
+				}
+				got, _ := wire["workflow_url"].(string)
+				if got != tc.want || run.URL != "https://github.com/acme/project/actions/runs/9" || run.WorkflowID != "77" || repo.URL != tc.repositoryURL {
+					t.Errorf("workflow URL=%q want=%q run=%#v", got, tc.want, run)
+				}
+			}
+			if calls.Load() != 2 {
+				t.Errorf("workflow links fetched additional metadata: requests=%d", calls.Load())
+			}
+		})
+	}
+}

@@ -46,14 +46,14 @@ type runResponse struct {
 	Stopped    string      `json:"stopped"`
 }
 
-func normalize(v runResponse) (ci.Run, error) {
+func normalize(repo ci.Repository, v runResponse) (ci.Run, error) {
 	if n, e := strconv.ParseUint(v.ID.String(), 10, 64); e != nil || n == 0 {
 		return ci.Run{}, rest.Error("invalid_data", "Provider run identity was invalid")
 	}
 	if v.WorkflowID == "" {
 		return ci.Run{}, rest.Error("invalid_data", "Provider workflow identity was unavailable")
 	}
-	r := ci.Run{ID: v.ID.String(), WorkflowID: v.WorkflowID, WorkflowName: v.WorkflowID, Title: v.Title, Branch: strings.TrimPrefix(v.PrettyRef, "refs/heads/"), Event: v.Event, URL: rest.SafeURL(v.HTMLURL), Attempt: 1, RawStatus: v.Status, StartedAt: rest.Timestamp(v.Started)}
+	r := ci.Run{ID: v.ID.String(), WorkflowID: v.WorkflowID, WorkflowName: v.WorkflowID, Title: v.Title, Branch: strings.TrimPrefix(v.PrettyRef, "refs/heads/"), Event: v.Event, URL: rest.SafeURL(v.HTMLURL), WorkflowURL: rest.WorkflowURL(repo.URL, "forgejo", v.WorkflowID), Attempt: 1, RawStatus: v.Status, StartedAt: rest.Timestamp(v.Started)}
 	if created := rest.Timestamp(v.Created); created != nil {
 		r.CreatedAt = *created
 	}
@@ -117,7 +117,7 @@ func (c *Client) ListRuns(ctx context.Context, r ci.Repository, page int) (ci.Ru
 	}
 	out := ci.RunPage{Runs: []ci.Run{}}
 	for _, v := range body.Runs {
-		run, e := normalize(v)
+		run, e := normalize(r, v)
 		if e != nil {
 			return ci.RunPage{}, e
 		}
@@ -146,7 +146,7 @@ func (c *Client) GetRun(ctx context.Context, r ci.Repository, id string) (ci.Run
 	if _, e = c.transport.Get(ctx, target, &v); e != nil {
 		return ci.Run{}, e
 	}
-	return normalize(v)
+	return normalize(r, v)
 }
 func (c *Client) EnrichDuration(_ context.Context, _ ci.Repository, r ci.Run) (ci.Run, error) {
 	return r, nil

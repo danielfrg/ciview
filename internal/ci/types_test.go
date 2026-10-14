@@ -41,3 +41,29 @@ func TestProviderErrorDoesNotEchoUpstreamPayload(t *testing.T) {
 		t.Fatalf("provider error leaked payload: %q", err)
 	}
 }
+
+func TestWorkflowURLIsAlwaysPresentAndUnknownRunURLIsOmitted(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		value   any
+		present bool
+	}{
+		{"workflow", ci.Workflow{}, true},
+		{"run", ci.Run{}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body, err := json.Marshal(tc.value)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wire map[string]any
+			if err := json.Unmarshal(body, &wire); err != nil {
+				t.Fatal(err)
+			}
+			value, present := wire["workflow_url"]
+			if present != tc.present || present && value != "" {
+				t.Fatalf("workflow URL presence=%v value=%#v wantPresent=%v", present, value, tc.present)
+			}
+		})
+	}
+}
