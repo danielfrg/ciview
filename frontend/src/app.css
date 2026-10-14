@@ -87,6 +87,12 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .latest-state { display: flex; align-items: center; gap: 7px; font-size: .75rem; font-weight: 550; color: var(--state-text, var(--neutral-text)); }
 .status-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--state-fill, var(--neutral)); }
 .row-notice { color: var(--notice-foreground); margin: 7px 0 0; font-size: .6875rem; overflow-wrap: anywhere; }
+.source-notices { margin-top: 32px; border-top: 1px solid var(--border); }
+.source-notices summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: var(--muted-foreground); font-size: .8125rem; font-weight: 600; }
+.source-notices summary:hover { color: var(--foreground); }
+.source-notices summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 3px; }
+.source-notices-content { display: grid; gap: 12px; padding-top: 4px; }
+.source-notices .source-notice { margin-bottom: 0; }
 .source-notice, .request-notice { background: var(--notice); color: var(--notice-foreground); border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; margin-bottom: 16px; overflow-wrap: anywhere; }
 .source-notice p, .request-notice p { margin: 0; font-size: .8125rem; }
 .source-notice p + p { margin-top: 5px; }

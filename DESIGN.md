@@ -60,5 +60,8 @@ links or invented metrics. Missing metrics use an em dash; zero duration is 0s.
 Keep initial loading, collection in progress, no observed workflows, no filter
 matches, request failure, stale repositories and unavailable selections distinct.
 Rows show branch scope without observed-run counts or coverage labels. The
-header has Refresh without collection timestamps; source and stale-data notices
-retain their health context. There is no footer. Reduced motion is respected.
+header has Refresh without collection timestamps. Source diagnostics appear
+in a native disclosure below workflows, collapsed by default; successful empty
+scans produce no notices. Errors, pending sources and incomplete scans retain
+their context, as do stale-data notices on rows. There is no footer. Reduced
+motion is respected.

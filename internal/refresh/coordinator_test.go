@@ -170,6 +170,50 @@ func TestInitialPermissionFailureAndNoObservedBranchAreVisible(t *testing.T) {
 		t.Fatal("lost limited coverage")
 	}
 }
+func TestLimitedHistoryNoticeSurvivesEmptyBranchScope(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		branch    string
+		partial   bool
+		wantKinds []string
+		wantRuns  int
+	}{
+		{name: "empty limited sample", branch: "feature", partial: true, wantKinds: []string{"no_observed_runs", "limited_history"}},
+		{name: "empty complete sample", branch: "feature", wantKinds: []string{"no_observed_runs"}},
+		{name: "nonempty limited sample", branch: "main", partial: true, wantRuns: 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := provider()
+			first, second := run("1", 1, true), run("2", 2, true)
+			first.Branch, second.Branch = tc.branch, tc.branch
+			p.pages = map[int]ci.RunPage{
+				1: {Runs: []ci.Run{first}, Next: true},
+				2: {Runs: []ci.Run{second}, Next: tc.partial},
+			}
+			c, m := setup(p)
+			if err := c.Refresh(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			snapshot := read(t, m)
+			if len(snapshot.Runs) != tc.wantRuns || snapshot.Coverage.Partial != tc.partial {
+				t.Fatalf("unexpected observed sample: %#v", snapshot)
+			}
+			source := inventory(t, c)
+			if len(source.Issues) != len(tc.wantKinds) {
+				t.Fatalf("source notices = %#v, want kinds %v", source.Issues, tc.wantKinds)
+			}
+			for i, kind := range tc.wantKinds {
+				issue := source.Issues[i]
+				if issue.Kind != kind || issue.Repository != "example/project" {
+					t.Fatalf("source notice %d = %#v, want repository-scoped %s", i, issue, kind)
+				}
+				if kind == "no_observed_runs" && strings.Contains(issue.Message, "page limit") {
+					t.Fatal("page-limit diagnostic remains tied to the hidden empty-sample notice")
+				}
+			}
+		})
+	}
+}
 func TestDiscoveryErrorIsSanitizedAndPreservesRows(t *testing.T) {
 	p := provider()
 	c, _ := setup(p)

@@ -382,11 +382,10 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 		retained[i].FinishedAt = timed.FinishedAt
 	}
 	if len(retained) == 0 {
-		message := "No observed runs in the selected branch scope"
+		issues = append(issues, ci.Issue{Repository: r.FullName, Kind: "no_observed_runs", Message: "No observed runs in the selected branch scope"})
 		if coverage.Partial {
-			message += "; history scan reached its page limit"
+			issues = append(issues, ci.Issue{Repository: r.FullName, Kind: "limited_history", Message: "History scan reached its page limit"})
 		}
-		issues = append(issues, ci.Issue{Repository: r.FullName, Kind: "no_observed_runs", Message: message})
 	}
 	c.mu.RLock()
 	if s.retryAt != nil && c.now().Before(*s.retryAt) {
