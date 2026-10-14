@@ -16,7 +16,7 @@
  <div class="workflow-history"><RunHistory runs={workflow.runs}/></div>
  <dl class="workflow-metrics">
   <div title="Execution duration of the newest completed run"><dt>Execution</dt><dd>{formatDuration(workflow.last_completed_duration_ms)}</dd></div>
-  <div title="Successful runs divided by successful and failed terminal runs in the configured sample"><dt>Success rate</dt><dd>{workflow.success_rate === null ? '—' : `${Math.round(workflow.success_rate * 100)}%`}<small>{workflow.eligible_runs} eligible</small></dd></div>
+  <div title="Successful runs divided by successful and failed terminal runs in the configured sample"><dt>Success rate</dt><dd>{workflow.success_rate === null ? '—' : `${Math.round(workflow.success_rate * 100)}%`}</dd></div>
   <div><dt>Last run</dt><dd>{#if latest}<time datetime={latest.created_at} title={absoluteTime(latest.created_at)}>{relativeTime(latest.created_at, now)}</time>{:else}—{/if}</dd></div>
  </dl>
  <div class="latest-state" data-state={latest?.state ?? 'unknown'}><span class="status-dot" aria-hidden="true"></span>{#if latestURL}<a href={latestURL} target="_blank" rel="noopener noreferrer" aria-label={`${latest ? statusLabel(latest.state) : 'No runs'}: open latest ${workflow.name} run`}>{latest ? statusLabel(latest.state) : 'No runs'}</a>{:else}<span>{latest ? statusLabel(latest.state) : 'No runs'}</span>{/if}</div>
