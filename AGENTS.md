@@ -1,4 +1,4 @@
-# Civiewer
+# CI viewer
 
 Read `PRODUCT.md` and `DESIGN.md` before changing the frontend.
 

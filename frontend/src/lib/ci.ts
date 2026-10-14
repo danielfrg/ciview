@@ -50,6 +50,26 @@ export function filterWorkflows(rows: Workflow[], filters: Filters): Workflow[] 
   return 0;
  });
 }
+export type RepositoryGroup = { repository: Repository; workflows: Workflow[] };
+export type SourceGroup = { name: string; repositories: RepositoryGroup[] };
+export function groupWorkflows(rows: Workflow[]): SourceGroup[] {
+ const sources = new Map<string, Map<string, RepositoryGroup>>();
+ for (const row of rows) {
+  let repositories = sources.get(row.repository.source);
+  if (!repositories) { repositories = new Map(); sources.set(row.repository.source, repositories); }
+  let group = repositories.get(row.repository.key);
+  if (!group) { group = { repository: row.repository, workflows: [] }; repositories.set(row.repository.key, group); }
+  group.workflows.push(row);
+ }
+ return [...sources].sort(([a], [b]) => a.localeCompare(b)).map(([name, repositories]) => ({
+  name,
+  repositories: [...repositories.values()].sort((a, b) => a.repository.full_name.localeCompare(b.repository.full_name) || a.repository.key.localeCompare(b.repository.key)).map(group => ({
+   repository: group.repository,
+   workflows: group.workflows.sort((a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key)),
+  })),
+ }));
+}
+
 export function formatDuration(ms: number | null): string {
  if (ms === null) return '—'; const seconds = Math.floor(ms / 1000);
  if (seconds >= 3600) return `${Math.floor(seconds / 3600)}h ${Math.floor(seconds % 3600 / 60)}m`;

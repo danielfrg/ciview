@@ -1,4 +1,4 @@
-# Civiewer
+# CI viewer
 
 Read-only GitHub Actions and Forgejo Actions overview. Scan recent workflow
 runs, execution timing and sample success rates, then open the original run.

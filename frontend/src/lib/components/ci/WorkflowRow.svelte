@@ -4,13 +4,11 @@
  let { workflow, now }: { workflow: Workflow; now: number } = $props();
  let latest = $derived(workflow.latest_run);
  let latestURL = $derived(latest ? safeURL(latest.url) : null);
- let repoURL = $derived(safeURL(workflow.repository.url));
 </script>
 <article class="workflow-row" aria-label={`${workflow.repository.full_name}, ${workflow.name}`}>
  <div class="workflow-identity">
-  <div class="repository-line"><span class="provider-name">{workflow.repository.source}</span><span aria-hidden="true">/</span>{#if repoURL}<a href={repoURL} target="_blank" rel="noopener noreferrer">{workflow.repository.full_name}</a>{:else}<span>{workflow.repository.full_name}</span>{/if}</div>
-  <h2>{#if latestURL}<a href={latestURL} target="_blank" rel="noopener noreferrer">{workflow.name}</a>{:else}{workflow.name}{/if}</h2>
-  <div class="workflow-scope">{workflow.branch_scope === 'all' ? 'All branches' : workflow.branch_scope}<span aria-hidden="true"> · </span>{workflow.runs.length} observed{#if workflow.coverage.partial}<span> · Limited history</span>{/if}</div>
+  <h4 class="workflow-title">{#if latestURL}<a href={latestURL} target="_blank" rel="noopener noreferrer">{workflow.name}</a>{:else}{workflow.name}{/if}</h4>
+  <div class="workflow-scope">{workflow.branch_scope === 'all' ? 'All branches' : workflow.branch_scope}</div>
   {#if workflow.health.state !== 'healthy' && workflow.health.state !== 'ok'}<p class="row-notice">{workflow.health.state === 'loading' ? 'Loading repository' : 'Stale data'}{workflow.health.message ? ` · ${workflow.health.message}` : ''}{#if workflow.health.last_success_at} · Updated {relativeTime(workflow.health.last_success_at, now)}{/if}{#if workflow.health.retry_at} · Retry {absoluteTime(workflow.health.retry_at)}{/if}</p>{/if}
  </div>
  <div class="workflow-history"><RunHistory runs={workflow.runs}/></div>

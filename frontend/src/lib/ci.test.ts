@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Run, RunState, Workflow } from './ci.ts';
+import * as ci from './ci.ts';
 import { parseOverview, historyRuns, sourceIssueTone, safeURL, filterWorkflows, formatDuration, sampleSuccess, readFilters, writeFilters } from './ci.ts';
 
 const repository = { key: 'repo-1', source: 'github', provider: 'github', id: '1', owner: 'example', name: 'api', full_name: 'example/api', default_branch: 'main', url: 'https://github.com/example/api' };
@@ -78,4 +79,29 @@ test('source issues distinguish history information, loading and unavailable sel
  assert.equal(sourceIssueTone('loading'), 'loading');
  assert.equal(sourceIssueTone('permission'), 'attention');
  assert.equal(sourceIssueTone('authentication'), 'attention');
+});
+
+
+test('workflow hierarchy separates sources and repository identities', () => {
+ const secondCheck: Workflow = { ...workflow, key: 'row-2', name: 'Build' };
+ const anotherRepo: Workflow = { ...workflow, key: 'row-3', repository: { ...repository, key: 'repo-2', name: 'web', full_name: 'example/web' } };
+ const otherSource: Workflow = { ...workflow, key: 'row-4', repository: { ...repository, key: 'repo-3', source: 'forgejo', provider: 'forgejo' } };
+ const rows = [anotherRepo, workflow, otherSource, secondCheck];
+ const before = structuredClone(rows);
+ const grouped = ci.groupWorkflows(rows);
+ assert.deepEqual(grouped.map(source => ({ name: source.name, repositories: source.repositories.map(repo => ({ key: repo.repository.key, rows: repo.workflows.map(row => row.key) })) })), [
+  { name: 'forgejo', repositories: [{ key: 'repo-3', rows: ['row-4'] }] },
+  { name: 'github', repositories: [{ key: 'repo-1', rows: ['row-2', 'row-1'] }, { key: 'repo-2', rows: ['row-3'] }] },
+ ]);
+ assert.deepEqual(rows, before);
+});
+
+test('workflow hierarchy contains only filtered workflows and has no empty groups', () => {
+ const second: Workflow = { ...workflow, key: 'row-2', repository: { ...repository, key: 'repo-2', source: 'forgejo', provider: 'forgejo' } };
+ const filters = readFilters(new URLSearchParams('provider=github'));
+ const grouped = ci.groupWorkflows(filterWorkflows([workflow, second], filters));
+ assert.equal(grouped.length, 1);
+ assert.equal(grouped[0].name, 'github');
+ assert.equal(grouped[0].repositories[0].workflows[0].key, 'row-1');
+ assert.deepEqual(ci.groupWorkflows([]), []);
 });

@@ -22,7 +22,7 @@ type healthResponse struct {
 
 func NewHandler(assets fs.FS, reader ci.OverviewReader) http.Handler {
 	mux := http.NewServeMux()
-	cfg := huma.DefaultConfig("Civiewer API", "0.1.0")
+	cfg := huma.DefaultConfig("CI viewer API", "0.1.0")
 	cfg.OpenAPIPath = "/api/openapi"
 	cfg.DocsPath = "/api/docs"
 	cfg.SchemasPath = "/api/schemas"
