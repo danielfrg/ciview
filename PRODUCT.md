@@ -8,9 +8,9 @@ product
 
 ## Users and purpose
 
-A homelab owner checks CI across organizations and repositories from a desktop
-or phone. Success means recognizing the latest state, inspecting a recent run
-sample, and opening the exact provider run quickly.
+A homelab owner checks CI across personal accounts, organizations and
+repositories from a desktop or phone. Success means recognizing the latest state,
+inspecting a recent run sample, and opening the exact provider run quickly.
 
 ## Principles
 

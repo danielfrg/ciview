@@ -22,6 +22,7 @@ type Source struct {
 	TokenEnv  string   `toml:"token_env"`
 	TokenFile string   `toml:"token_file"`
 	Orgs      []string `toml:"orgs"`
+	Users     []string `toml:"users"`
 	Repos     []string `toml:"repos"`
 }
 

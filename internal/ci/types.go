@@ -83,6 +83,7 @@ type Inventory struct {
 }
 type Selection struct {
 	Orgs  []string `json:"orgs"`
+	Users []string `json:"users"`
 	Repos []string `json:"repos"`
 }
 type Discovery struct {
@@ -194,6 +195,7 @@ func (v Inventory) MarshalJSON() ([]byte, error) {
 func (v Selection) MarshalJSON() ([]byte, error) {
 	type plain Selection
 	v.Orgs = nonNil(v.Orgs)
+	v.Users = nonNil(v.Users)
 	v.Repos = nonNil(v.Repos)
 	return json.Marshal(plain(v))
 }
