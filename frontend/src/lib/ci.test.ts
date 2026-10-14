@@ -123,3 +123,28 @@ test('handles absent workflow links from an older API and rejects malformed valu
  Object.assign(data.workflows[0], { workflow_url: 42 });
  assert.throws(() => parseOverview(data));
 });
+
+test('source notices omit healthy sources with only unobserved runs', () => {
+ const sources: ci.Source[] = [
+  { name: 'empty', provider: 'github', state: 'healthy', repositories: ['empty-repo'], issues: [{ repository: 'example/empty', kind: 'no_observed_runs', message: 'No observed runs in the selected branch scope' }], last_discovery_at: null },
+  { name: 'healthy', provider: 'forgejo', state: 'ok', repositories: ['repo'], issues: [], last_discovery_at: null },
+ ];
+ const before = structuredClone(sources);
+ assert.deepEqual(ci.sourceNotices(sources), []);
+ assert.deepEqual(sources, before);
+});
+
+test('source notices keep errors, limited history and state-only pending sources', () => {
+ const sources: ci.Source[] = [
+  { name: 'mixed', provider: 'github', state: 'partial', repositories: ['repo'], issues: [{ repository: 'example/empty', kind: 'no_observed_runs', message: 'No observed runs' }, { repository: 'example/private', kind: 'permission', message: 'Repository access denied' }], last_discovery_at: null },
+  { name: 'limited', provider: 'github', state: 'healthy', repositories: ['repo'], issues: [{ repository: 'example/history', kind: 'no_observed_runs', message: 'No observed runs' }, { repository: 'example/history', kind: 'limited_history', message: 'History scan reached its page limit' }], last_discovery_at: null },
+  { name: 'pending', provider: 'forgejo', state: 'loading', repositories: [], issues: [], last_discovery_at: null },
+  { name: 'unavailable', provider: 'forgejo', state: 'unavailable', repositories: [], issues: [], last_discovery_at: null },
+ ];
+ const before = structuredClone(sources);
+ const notices = ci.sourceNotices(sources);
+ assert.deepEqual(notices.map(source => ({ name: source.name, kinds: source.issues.map(issue => issue.kind) })), [
+  { name: 'mixed', kinds: ['permission'] }, { name: 'limited', kinds: ['limited_history'] }, { name: 'pending', kinds: [] }, { name: 'unavailable', kinds: [] },
+ ]);
+ assert.deepEqual(sources, before);
+});

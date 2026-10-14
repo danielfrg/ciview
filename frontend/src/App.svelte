@@ -68,10 +68,9 @@
   {#if activeFilters}<div class="filter-actions"><Button variant="outline" class="clear-filters" onclick={clearFilters}>Clear filters</Button></div>{/if}
  </section>
  {#if error}<div class="request-notice" role="alert"><div><strong>{overview ? 'Showing the last overview' : 'Unable to load workflows'}</strong><p>{error}</p></div><Button onclick={() => void load()} disabled={loading}>{loading ? 'Retrying…' : 'Retry'}</Button></div>{/if}
- {#if overview}<SourceNotices sources={overview.sources}/>{/if}
  <section class="workflow-overview" aria-label="Workflows" aria-busy={loading && !overview}>
   {#if !overview && loading}<div class="workflow-state loading-state" role="status"><span class="sr-only">Loading workflow overview</span>{#each [1,2,3,4] as row (row)}<div class="skeleton-row" aria-hidden="true"><div></div><div></div><div></div></div>{/each}</div>
-  {:else if overview && !overview.workflows.length}<div class="workflow-state empty-state"><h2>{pendingSources ? 'Loading repositories' : unavailableSources ? 'Workflow data unavailable' : 'No observed workflows'}</h2><p>{pendingSources ? 'The server is collecting the first run sample.' : unavailableSources ? 'Check the source notices above for unavailable selections or connection errors.' : 'No workflow runs were found in the configured repositories and branch scope.'}</p></div>
+  {:else if overview && !overview.workflows.length}<div class="workflow-state empty-state"><h2>{pendingSources ? 'Loading repositories' : unavailableSources ? 'Workflow data unavailable' : 'No observed workflows'}</h2><p>{pendingSources ? 'The server is collecting the first run sample.' : unavailableSources ? 'Check the source notices below for unavailable selections or connection errors.' : 'No workflow runs were found in the configured repositories and branch scope.'}</p></div>
   {:else if overview && !visible.length}<div class="workflow-state empty-state"><h2>No matching workflows</h2><p>Try another search or clear your filters.</p><Button variant="outline" onclick={clearFilters}>Clear filters</Button></div>
   {:else if overview}
    <div class="source-groups">
@@ -92,4 +91,5 @@
    </div>
   {:else}<div class="workflow-state empty-state"><p>Your workflow overview will appear when the connection recovers.</p></div>{/if}
  </section>
+ {#if overview}<SourceNotices sources={overview.sources}/>{/if}
 </main>

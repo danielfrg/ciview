@@ -104,3 +104,8 @@ export function sourceIssueTone(kind: string): 'info' | 'loading' | 'attention' 
  if (kind === 'loading') return 'loading';
  return ['no_observed_runs', 'limited_history'].includes(kind) ? 'info' : 'attention';
 }
+
+export function sourceNotices(sources: Source[]): Source[] {
+ return sources.map(source => ({ ...source, issues: source.issues.filter(issue => issue.kind !== 'no_observed_runs') }))
+  .filter(source => source.issues.length > 0 || source.state !== 'healthy' && source.state !== 'ok');
+}
