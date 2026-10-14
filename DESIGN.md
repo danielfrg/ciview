@@ -38,9 +38,10 @@ names wrap. Large configured samples scroll inside the history region.
 
 Use the system sans-serif stack, a 1.5rem semibold page heading, .9375rem workflow
 titles and compact supporting labels. Metric numerals are tabular. Source
-headings separate configured sources. Repository headings sit above
-bordered workflow panels, with row separators inside each repository. This
-hierarchy uses spacing and borders without shadows.
+headings separate configured sources. Bordered repository panels contain rows
+without repository or column headings. Each row title combines the repository
+link, a hyphen, and the workflow run link; branch scope stays on the next line.
+Spacing and row separators establish grouping without shadows.
 
 ## Interaction and states
 
