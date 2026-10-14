@@ -6,8 +6,8 @@ api:
 frontend:
     pnpm --dir frontend dev
 
-dev:
-    just --parallel api frontend
+[parallel]
+dev: api frontend
 
 check:
     pnpm --dir frontend install --frozen-lockfile
