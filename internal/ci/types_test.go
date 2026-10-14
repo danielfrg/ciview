@@ -16,7 +16,7 @@ func TestModelsEncodeSnakeCaseAndEmptyArrays(t *testing.T) {
 	}{
 		{"overview", ci.Overview{Sources: []ci.SourceState{{}}, Workflows: []ci.Workflow{{}}}, []string{`"workflows":[`, `"sources":[`, `"repositories":[]`, `"issues":[]`, `"runs":[]`, `"latest_run":null`, `"success_rate":null`, `"last_completed_duration_ms":null`}},
 		{"snapshot", ci.RepositorySnapshot{}, []string{`"runs":[]`, `"oldest_fetched_at":null`, `"last_success_at":null`}},
-		{"selection", ci.Selection{}, []string{`"orgs":[]`, `"repos":[]`}},
+		{"selection", ci.Selection{}, []string{`"orgs":[]`, `"users":[]`, `"repos":[]`}},
 		{"discovery", ci.Discovery{}, []string{`"repositories":[]`, `"issues":[]`}},
 		{"page", ci.RunPage{}, []string{`"runs":[]`}},
 	}

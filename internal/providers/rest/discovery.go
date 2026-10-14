@@ -73,54 +73,119 @@ func (t *Transport) Discover(ctx context.Context, s ci.Selection, size int) (ci.
 			d.Repositories = append(d.Repositories, r)
 		}
 	}
-	for _, org := range s.Orgs {
-		if ctx.Err() != nil {
-			return d, ctx.Err()
+	// A shared listing path preserves partial inventory, pagination checks and
+	// source cooldowns for organizations, users and authenticated visibility.
+	list := func(selections []string, endpoint string, query url.Values, selectionFor func(repository) string) error {
+		report := func(err error) {
+			for _, selection := range selections {
+				issue(selection, err)
+			}
 		}
-		if _, e := Segment(org); e != nil {
-			issue(org, e)
-			continue
+		pageTarget := func(page int) (string, error) {
+			q := pageQuery(t.Provider, page, size)
+			for key, values := range query {
+				q[key] = append([]string(nil), values...)
+			}
+			return t.Endpoint(endpoint, q)
 		}
-		target, _ := t.Endpoint("/orgs/"+org+"/repos", pageQuery(t.Provider, 1, size))
+		target, err := pageTarget(1)
+		if err != nil {
+			report(err)
+			return nil
+		}
 		visited := map[string]bool{}
 		for page := 1; page <= 100; page++ {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if visited[target] {
-				issue(org, Error("invalid_data", "Provider pagination repeated a page"))
-				break
+				report(Error("invalid_data", "Provider pagination repeated a page"))
+				return nil
 			}
 			visited[target] = true
 			var items []repository
-			p, e := t.Get(ctx, target, &items)
-			if e != nil {
-				issue(org, e)
-				if discoveryCooldown(e) {
-					return d, e
+			p, err := t.Get(ctx, target, &items)
+			if err != nil {
+				report(err)
+				if discoveryCooldown(err) {
+					return err
 				}
-				break
+				return nil
 			}
 			for _, item := range items {
-				add(item, org)
+				selection := selections[0]
+				if selectionFor != nil {
+					selection = selectionFor(item)
+				}
+				if selection != "" {
+					add(item, selection)
+				}
 			}
-			next, e := t.HasNext(p, page, size, len(items), -1)
-			if e != nil {
-				issue(org, e)
-				break
+			next, err := t.HasNext(p, page, size, len(items), -1)
+			if err != nil {
+				report(err)
+				return nil
 			}
 			if !next {
-				break
+				return nil
 			}
 			if page == 100 {
-				issue(org, Error("incomplete", "Organization discovery reached its page limit"))
-				break
+				report(Error("incomplete", "Repository discovery reached its page limit"))
+				return nil
 			}
-			target, e = t.NextLink(p)
-			if e != nil {
-				issue(org, e)
-				break
+			target, err = t.NextLink(p)
+			if err != nil {
+				report(err)
+				return nil
 			}
 			if target == "" {
-				target, _ = t.Endpoint("/orgs/"+org+"/repos", pageQuery(t.Provider, page+1, size))
+				target, err = pageTarget(page + 1)
 			}
+			if err != nil {
+				report(err)
+				return nil
+			}
+		}
+		return nil
+	}
+	for _, org := range s.Orgs {
+		if _, err := Segment(org); err != nil {
+			issue(org, err)
+			continue
+		}
+		if err := list([]string{org}, "/orgs/"+org+"/repos", nil, nil); err != nil {
+			return d, err
+		}
+	}
+	users := map[string]string{}
+	var selectedUsers []string
+	for _, user := range s.Users {
+		if _, err := Segment(user); err != nil {
+			issue(user, err)
+			continue
+		}
+		key := strings.ToLower(user)
+		if users[key] != "" {
+			continue
+		}
+		users[key] = user
+		selectedUsers = append(selectedUsers, user)
+		// Forgejo includes private repositories visible to the authenticated
+		// account here. GitHub exposes only public repositories on this route.
+		if err := list([]string{user}, "/users/"+user+"/repos", nil, nil); err != nil {
+			return d, err
+		}
+	}
+	if t.Provider == "github" && t.token != "" && len(selectedUsers) > 0 {
+		// Merge token-visible private repositories owned by any selected user.
+		// Collaborator access covers private repositories owned by another user;
+		// unrelated repositories never enter this source's inventory.
+		query := url.Values{"visibility": {"all"}, "affiliation": {"owner,collaborator"}}
+		selectionFor := func(item repository) string {
+			return users[strings.ToLower(item.Owner.Login)]
+		}
+		if err := list(selectedUsers, "/user/repos", query, selectionFor); err != nil {
+			return d, err
 		}
 	}
 	for _, selection := range s.Repos {

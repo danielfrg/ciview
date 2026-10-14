@@ -203,7 +203,7 @@ func (c *Coordinator) refreshSource(ctx context.Context, s *source) error {
 	}
 	if discover {
 		call, cancel := context.WithTimeout(ctx, c.requestTimeout)
-		d, err := s.provider.Discover(call, ci.Selection{Orgs: s.config.Orgs, Repos: s.config.Repos})
+		d, err := s.provider.Discover(call, ci.Selection{Orgs: s.config.Orgs, Users: s.config.Users, Repos: s.config.Repos})
 		cancel()
 		if ctx.Err() != nil {
 			return ctx.Err()

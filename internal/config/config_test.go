@@ -125,3 +125,35 @@ func TestResolveTokenFailsClosedWithoutDisclosure(t *testing.T) {
 		t.Fatalf("public source: %q, %v", token, err)
 	}
 }
+
+func TestLoadUserRepositorySelections(t *testing.T) {
+	for _, tc := range []struct {
+		name, provider, extra string
+	}{
+		{"github user only", "github", ""},
+		{"forgejo user only", "forgejo", "base_url='https://forge.example.test'\n"},
+		{"mixed selectors", "github", "orgs=['example-org']\nrepos=['example-org/project']\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body := "[[sources]]\nname='public'\nprovider='" + tc.provider + "'\nusers=['example-user']\n" + tc.extra
+			if _, err := Load(writeConfig(t, body)); err != nil {
+				t.Fatalf("valid user selection rejected: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsMalformedUserNames(t *testing.T) {
+	for _, user := range []string{"", "example/project", "../example", " example", "example..user", "example?token=private-marker"} {
+		t.Run(user, func(t *testing.T) {
+			body := "[[sources]]\nname='public'\nprovider='github'\nusers=['" + user + "']\n"
+			_, err := Load(writeConfig(t, body))
+			if err == nil || !strings.Contains(err.Error(), ".users contains an invalid user") {
+				t.Fatalf("malformed user selection should be rejected by validation: %v", err)
+			}
+			if strings.Contains(err.Error(), "private-marker") {
+				t.Fatalf("validation error disclosed supplied value: %v", err)
+			}
+		})
+	}
+}

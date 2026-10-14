@@ -15,6 +15,7 @@ repos = ["actions/checkout"]
 # token_env = "CIVIEWER_GITHUB_TOKEN"
 # token_file = "/run/secrets/github-token"
 # orgs = ["example-org"]
+# users = ["example-user"]
 # repos = ["example-owner/example-private-repository"]
 
 # Add named Forgejo instances as separate sources. base_url is the instance root.
@@ -24,4 +25,5 @@ repos = ["actions/checkout"]
 # base_url = "https://forgejo.example.net"
 # token_env = "CIVIEWER_FORGEJO_TOKEN"
 # orgs = ["example-org"]
+# users = ["example-user"]
 # repos = ["example-owner/example-repository"]

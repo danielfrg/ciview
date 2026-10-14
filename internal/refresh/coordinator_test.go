@@ -19,6 +19,7 @@ type controlledProvider struct {
 	mu                       sync.Mutex
 	discovery                ci.Discovery
 	discoveryErr             error
+	discoverFn               func(context.Context, ci.Selection) (ci.Discovery, error)
 	pages                    map[int]ci.RunPage
 	listErr                  error
 	got                      map[string]ci.Run
@@ -32,6 +33,9 @@ func (p *controlledProvider) Discover(ctx context.Context, s ci.Selection) (ci.D
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.discoveries++
+	if p.discoverFn != nil {
+		return p.discoverFn(ctx, s)
+	}
 	return p.discovery, p.discoveryErr
 }
 func (p *controlledProvider) ListRuns(ctx context.Context, r ci.Repository, n int) (ci.RunPage, error) {
@@ -549,5 +553,34 @@ func TestRetentionAndDurationUseHeadRepositoryIdentity(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRefreshPublishesRepositoriesFromConfiguredUserSelection(t *testing.T) {
+	p := provider()
+	selected := repo()
+	selected.FullName = "example-user/project"
+	p.discoverFn = func(_ context.Context, selection ci.Selection) (ci.Discovery, error) {
+		if len(selection.Users) != 1 || selection.Users[0] != "example-user" || len(selection.Orgs) != 1 || selection.Orgs[0] != "example-org" || len(selection.Repos) != 1 || selection.Repos[0] != "example-org/project" {
+			return ci.Discovery{Complete: true}, nil
+		}
+		return ci.Discovery{Complete: true, Repositories: []ci.Repository{selected}}, nil
+	}
+	cfg := testConfig()
+	cfg.Sources[0].Users = []string{"example-user"}
+	cfg.Sources[0].Orgs = []string{"example-org"}
+	cfg.Sources[0].Repos = []string{"example-org/project"}
+	store := snapshots.NewMemory()
+	c := New(cfg, map[string]ci.Provider{"public": p}, store)
+	if err := c.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	state := inventory(t, c)
+	if len(state.Repositories) != 1 || state.Repositories[0] != "opaque" {
+		t.Fatalf("configured user repository missing from inventory: %#v", state)
+	}
+	snapshot := read(t, store)
+	if snapshot.Repository.FullName != "example-user/project" || len(snapshot.Runs) != 1 || snapshot.Runs[0].ID != "1" {
+		t.Fatalf("configured user repository runs missing: %#v", snapshot)
 	}
 }

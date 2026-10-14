@@ -89,12 +89,17 @@ func (c Config) Validate() error {
 				return fmt.Errorf("%s.base_url must be an HTTP(S) instance URL without credentials, query, or fragment", label)
 			}
 		}
-		if len(source.Orgs)+len(source.Repos) == 0 {
-			return fmt.Errorf("%s must select an organization or repository", label)
+		if len(source.Orgs)+len(source.Users)+len(source.Repos) == 0 {
+			return fmt.Errorf("%s must select a user, organization, or repository", label)
 		}
 		for _, org := range source.Orgs {
 			if !validPart(org) {
 				return fmt.Errorf("%s.orgs contains an invalid organization", label)
+			}
+		}
+		for _, user := range source.Users {
+			if !validPart(user) {
+				return fmt.Errorf("%s.users contains an invalid user", label)
 			}
 		}
 		for _, repo := range source.Repos {
