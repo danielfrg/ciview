@@ -84,7 +84,6 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .workflow-metrics { display: grid; grid-template-columns: .85fr 1fr 1.25fr; gap: 16px; margin: 0; align-self: center; font-variant-numeric: tabular-nums; }
 .workflow-metrics dt { font-size: .625rem; color: var(--muted-foreground); margin-bottom: 4px; }
 .workflow-metrics dd { margin: 0; font-size: .8125rem; font-weight: 550; }
-.workflow-metrics small { display: block; margin-top: 2px; color: var(--muted-foreground); font-size: .625rem; font-weight: 400; }
 .latest-state { display: flex; align-items: center; gap: 7px; font-size: .75rem; font-weight: 550; color: var(--state-text, var(--neutral-text)); }
 .status-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--state-fill, var(--neutral)); }
 .row-notice { color: var(--notice-foreground); margin: 7px 0 0; font-size: .6875rem; overflow-wrap: anywhere; }
