@@ -22,6 +22,8 @@ type repository struct {
 	} `json:"owner"`
 	DefaultBranch string `json:"default_branch"`
 	HTMLURL       string `json:"html_url"`
+	Fork          bool   `json:"fork"`
+	Archived      bool   `json:"archived"`
 }
 
 func (t *Transport) repository(v repository) (ci.Repository, error) {
@@ -63,6 +65,9 @@ func (t *Transport) Discover(ctx context.Context, s ci.Selection, size int) (ci.
 		d.Issues = append(d.Issues, ci.Issue{Repository: selection, Kind: kind, Message: message})
 	}
 	add := func(v repository, selection string) {
+		if v.Fork || v.Archived {
+			return
+		}
 		r, e := t.repository(v)
 		if e != nil {
 			issue(selection, e)

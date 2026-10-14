@@ -14,6 +14,7 @@ inspecting a recent run sample, and opening the exact provider run quickly.
 
 ## Principles
 
+- Collect active source repositories; exclude archived repositories and forks.
 - Group workflows by source, then repository, with one workflow per row.
 - Keep workflow identity compact and recent history broad and horizontal.
 - Show real status, timing and coverage. Missing timing stays unavailable.
