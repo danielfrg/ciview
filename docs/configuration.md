@@ -33,7 +33,9 @@ Source names must be unique. Each source selects at least one `orgs` organizatio
 Their union is deduplicated. Use `users` for a personal account even when its
 profile page looks like an organization. User selections discover repositories
 owned by those accounts, including private repositories the configured token
-can access.
+can access. Organization selections discover all visible repositories owned by
+those organizations. Archived repositories and forks are excluded from all
+selections, including explicit `repos`, for both providers.
 
 Forgejo `base_url` is the instance root and may include a path prefix. Use
 separate names for instances.

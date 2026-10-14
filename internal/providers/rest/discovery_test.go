@@ -289,3 +289,86 @@ func TestGitHubPrivateUserDiscoveryKeepsEarlierPagesOnFailure(t *testing.T) {
 		t.Fatalf("partial private inventory or owner notices=%+v", d)
 	}
 }
+
+func TestDiscoveryExcludesArchivedRepositoriesAndForksFromEverySelection(t *testing.T) {
+	for _, provider := range []string{"github", "forgejo"} {
+		t.Run(provider, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/orgs/team/repos":
+					fmt.Fprint(w, `[{"id":1,"name":"active","owner":{"login":"team"},"fork":false,"archived":false},{"id":2,"name":"fork","owner":{"login":"team"},"fork":true,"archived":false},{"id":3,"name":"archived","owner":{"login":"team"},"fork":false,"archived":true},{"id":4,"name":"both","owner":{"login":"team"},"fork":true,"archived":true}]`)
+				case "/users/person/repos":
+					fmt.Fprint(w, `[{"id":5,"name":"active","owner":{"login":"person"},"fork":false,"archived":false},{"id":6,"name":"fork","owner":{"login":"person"},"fork":true,"archived":false},{"id":7,"name":"archived","owner":{"login":"person"},"fork":false,"archived":true},{"id":8,"name":"both","owner":{"login":"person"},"fork":true,"archived":true}]`)
+				case "/user/repos":
+					if provider != "github" {
+						t.Error("Forgejo should not need another private list")
+					}
+					fmt.Fprint(w, `[{"id":9,"name":"private","owner":{"login":"PERSON"},"private":true,"fork":false,"archived":false},{"id":10,"name":"private-fork","owner":{"login":"person"},"private":true,"fork":true,"archived":false},{"id":11,"name":"private-archived","owner":{"login":"person"},"private":true,"fork":false,"archived":true},{"id":12,"name":"private-both","owner":{"login":"person"},"private":true,"fork":true,"archived":true}]`)
+				case "/repos/person/pinned":
+					fmt.Fprint(w, `{"id":14,"name":"pinned","owner":{"login":"person"},"fork":false,"archived":false}`)
+				case "/repos/person/pinned-fork":
+					fmt.Fprint(w, `{"id":15,"name":"pinned-fork","owner":{"login":"person"},"fork":true,"archived":false}`)
+				case "/repos/person/pinned-archived":
+					fmt.Fprint(w, `{"id":16,"name":"pinned-archived","owner":{"login":"person"},"fork":false,"archived":true}`)
+				case "/repos/person/pinned-both":
+					fmt.Fprint(w, `{"id":17,"name":"pinned-both","owner":{"login":"person"},"fork":true,"archived":true}`)
+				default:
+					t.Errorf("unexpected request: %s", r.URL)
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+			tr, err := New("source", provider, server.URL, "private-secret", "Bearer", server.Client())
+			if err != nil {
+				t.Fatal(err)
+			}
+			selection := ci.Selection{Orgs: []string{"team"}, Users: []string{"person"}, Repos: []string{"person/pinned", "person/pinned-fork", "person/pinned-archived", "person/pinned-both"}}
+			d, err := tr.Discover(context.Background(), selection, 100)
+			if err != nil || !d.Complete || len(d.Issues) != 0 {
+				t.Fatalf("filtered discovery=%+v err=%v", d, err)
+			}
+			var names []string
+			for _, repo := range d.Repositories {
+				names = append(names, repo.FullName)
+			}
+			sort.Strings(names)
+			want := []string{"person/active", "person/pinned", "team/active"}
+			if provider == "github" {
+				want = []string{"PERSON/private", "person/active", "person/pinned", "team/active"}
+			}
+			if !reflect.DeepEqual(names, want) {
+				t.Fatalf("active source repositories=%v want=%v", names, want)
+			}
+		})
+	}
+}
+
+func TestDiscoveryContinuesPastPagesContainingOnlyExcludedRepositories(t *testing.T) {
+	for _, provider := range []string{"github", "forgejo"} {
+		t.Run(provider, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/users/person/repos" {
+					t.Errorf("unexpected request: %s", r.URL)
+					http.NotFound(w, r)
+					return
+				}
+				w.Header().Set("X-Total-Count", "3")
+				switch r.URL.Query().Get("page") {
+				case "1":
+					fmt.Fprint(w, `[{"id":1,"name":"fork","owner":{"login":"person"},"fork":true},{"id":2,"name":"archived","owner":{"login":"person"},"archived":true}]`)
+				case "2":
+					fmt.Fprint(w, `[{"id":3,"name":"active","owner":{"login":"person"},"fork":false,"archived":false}]`)
+				default:
+					t.Errorf("unexpected page: %s", r.URL)
+					fmt.Fprint(w, `[]`)
+				}
+			}))
+			defer server.Close()
+			tr, _ := New("source", provider, server.URL, "", "Bearer", server.Client())
+			d, err := tr.Discover(context.Background(), ci.Selection{Users: []string{"person"}}, 100)
+			if err != nil || !d.Complete || len(d.Issues) != 0 || len(d.Repositories) != 1 || d.Repositories[0].FullName != "person/active" {
+				t.Fatalf("later source repository lost=%+v err=%v", d, err)
+			}
+		})
+	}
+}
