@@ -158,3 +158,59 @@ func TestOverviewUnknownPullRequestProvenanceIsConservative(t *testing.T) {
 		}
 	}
 }
+
+func TestOverviewWorkflowURLUsesLatestAvailableMetadataInItsGroup(t *testing.T) {
+	for _, tc := range []struct{ name, latestURL, want string }{
+		{"latest", "https://github.com/acme/project/actions/workflows/new.yml", "https://github.com/acme/project/actions/workflows/new.yml"},
+		{"newest_known", "", "https://github.com/acme/project/actions/workflows/check.yml"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			store := snapshots.NewMemory()
+			repo := ci.Repository{Key: "source/repo", URL: "https://github.com/acme/project"}
+			var runs []ci.Run
+			payload := fmt.Sprintf(`[
+				{"id":"old","workflow_id":"checks","workflow_url":"https://github.com/acme/project/actions/workflows/old.yml","created_at":"2026-10-14T12:00:00Z"},
+				{"id":"known","workflow_id":"checks","workflow_url":"https://github.com/acme/project/actions/workflows/check.yml","created_at":"2026-10-14T12:01:00Z"},
+				{"id":"latest","workflow_id":"checks","workflow_url":%q,"url":"https://github.com/acme/project/actions/runs/9","created_at":"2026-10-14T12:02:00Z"},
+				{"id":"other","workflow_id":"other","workflow_url":"https://github.com/acme/project/actions/workflows/other.yml","created_at":"2026-10-14T12:03:00Z"},
+				{"id":"unknown","workflow_id":"unknown","url":"https://github.com/acme/project/actions/runs/10","created_at":"2026-10-14T12:04:00Z"}
+			]`, tc.latestURL)
+			if err := json.Unmarshal([]byte(payload), &runs); err != nil {
+				t.Fatal(err)
+			}
+			if err := store.Write(ctx, ci.RepositorySnapshot{Repository: repo, Runs: runs}); err != nil {
+				t.Fatal(err)
+			}
+			inventory := fixtureInventory{ci.Inventory{Sources: []ci.SourceState{{Repositories: []ci.RepositoryKey{repo.Key}}}}}
+			result, err := ci.NewOverview(store, inventory, 3, "all", time.Minute).Overview(ctx)
+			if err != nil || len(result.Workflows) != 3 {
+				t.Fatalf("overview=%#v err=%v", result, err)
+			}
+			body, err := json.Marshal(result)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wire struct {
+				Workflows []map[string]any `json:"workflows"`
+			}
+			if err := json.Unmarshal(body, &wire); err != nil {
+				t.Fatal(err)
+			}
+			for _, row := range wire.Workflows {
+				if row["workflow_id"] == "checks" {
+					if row["workflow_url"] != tc.want {
+						t.Errorf("workflow URL=%v want=%q", row["workflow_url"], tc.want)
+					}
+					latest := row["latest_run"].(map[string]any)
+					if latest["url"] != "https://github.com/acme/project/actions/runs/9" || row["repository"].(map[string]any)["url"] != repo.URL {
+						t.Errorf("individual or repository URL changed: %#v", row)
+					}
+				}
+				if row["workflow_id"] == "unknown" && row["workflow_url"] != "" {
+					t.Errorf("unrelated workflow link used: %#v", row)
+				}
+			}
+		})
+	}
+}

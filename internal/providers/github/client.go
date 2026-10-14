@@ -57,7 +57,7 @@ type runResponse struct {
 	StartedAt  string `json:"run_started_at"`
 }
 
-func normalize(v runResponse) (ci.Run, error) {
+func normalize(repo ci.Repository, v runResponse) (ci.Run, error) {
 	if n, e := strconv.ParseUint(v.ID.String(), 10, 64); e != nil || n == 0 {
 		return ci.Run{}, rest.Error("invalid_data", "Provider run identity was invalid")
 	}
@@ -85,7 +85,7 @@ func normalize(v runResponse) (ci.Run, error) {
 			headRepositoryID = v.HeadRepository.ID.String()
 		}
 	}
-	r := ci.Run{ID: v.ID.String(), WorkflowID: workflow, WorkflowName: name, Title: v.DisplayTitle, Branch: v.HeadBranch, HeadRepositoryID: headRepositoryID, Event: v.Event, URL: rest.SafeURL(v.HTMLURL), Attempt: attempt, RawStatus: v.Status, RawConclusion: v.Conclusion, StartedAt: rest.Timestamp(v.StartedAt)}
+	r := ci.Run{ID: v.ID.String(), WorkflowID: workflow, WorkflowName: name, Title: v.DisplayTitle, Branch: v.HeadBranch, HeadRepositoryID: headRepositoryID, Event: v.Event, URL: rest.SafeURL(v.HTMLURL), WorkflowURL: rest.WorkflowURL(repo.URL, "github", v.Path), Attempt: attempt, RawStatus: v.Status, RawConclusion: v.Conclusion, StartedAt: rest.Timestamp(v.StartedAt)}
 	if created := rest.Timestamp(v.CreatedAt); created != nil {
 		r.CreatedAt = *created
 	}
@@ -147,7 +147,7 @@ func (c *Client) ListRuns(ctx context.Context, r ci.Repository, page int) (ci.Ru
 	}
 	out := ci.RunPage{Runs: []ci.Run{}}
 	for _, v := range body.Runs {
-		run, e := normalize(v)
+		run, e := normalize(r, v)
 		if e != nil {
 			return ci.RunPage{}, e
 		}
@@ -176,7 +176,7 @@ func (c *Client) GetRun(ctx context.Context, r ci.Repository, id string) (ci.Run
 	if _, e = c.transport.Get(ctx, target, &v); e != nil {
 		return ci.Run{}, e
 	}
-	return normalize(v)
+	return normalize(r, v)
 }
 
 // EnrichDuration computes execution span only from the selected attempt's jobs.

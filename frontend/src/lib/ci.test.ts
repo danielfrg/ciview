@@ -105,3 +105,21 @@ test('workflow hierarchy contains only filtered workflows and has no empty group
  assert.equal(grouped[0].repositories[0].workflows[0].key, 'row-1');
  assert.deepEqual(ci.groupWorkflows([]), []);
 });
+
+
+test('preserves provider workflow history links independently of run links', () => {
+ for (const url of ['https://github.com/example/api/actions/workflows/check.yml', 'https://forgejo.example.net/prefix/example/api/actions?workflow=check.yml']) {
+  const data = overview();
+  data.workflows[0].workflow_url = url;
+  const parsed = parseOverview(data).workflows[0];
+  assert.equal(parsed.workflow_url, url);
+  assert.equal(parsed.latest_run?.url, 'https://github.com/example/api/actions/runs/101');
+ }
+});
+
+test('handles absent workflow links from an older API and rejects malformed values', () => {
+ assert.equal(parseOverview(overview()).workflows[0].workflow_url, '');
+ const data = overview();
+ Object.assign(data.workflows[0], { workflow_url: 42 });
+ assert.throws(() => parseOverview(data));
+});
