@@ -9,6 +9,10 @@ branch = "default"
 [[sources]]
 name = "github"
 provider = "github"
+# Set true to hide workflows whose files no longer exist on the selected branch.
+existing_workflows_only = false
+# Generated Dependabot update and dependency-graph workflows are hidden by default.
+show_dependabot_updates = false
 repos = ["actions/checkout"]
 
 # For private repositories or a higher GitHub API allowance, add one credential:
@@ -22,6 +26,7 @@ repos = ["actions/checkout"]
 # [[sources]]
 # name = "forgejo"
 # provider = "forgejo"
+# existing_workflows_only = false
 # base_url = "https://forgejo.example.net"
 # token_env = "CIVIEW_FORGEJO_TOKEN"
 # orgs = ["example-org"]

@@ -7,27 +7,17 @@ system typography and restrained boundaries. The page has a header, filters
 and source groups containing repository panels and workflow rows. No sidebar or
 decorative dashboard cards.
 
-Semantic tokens live in `frontend/src/app.css` and follow system light/dark
-preference. Light uses a near-white background, white rows, charcoal text and
-cool neutral boundaries; dark uses charcoal surfaces and near-white text.
+Kit UI (`@kenn-io/kit-ui`) supplies plain CSS tokens and reusable components.
+The dependency is pinned to an upstream GitHub commit in `frontend/package.json`.
+`frontend/src/app.css` maps its semantic palette to CI run outcomes and owns
+the workflow layout.
+Tailwind is not used. Light/dark mode follows the system initially; the header
+ThemeToggle persists an explicit choice under `ciview-theme`.
 
-| Role | Light | Dark |
-| --- | --- | --- |
-| Background | `#f7f8fa` | `#16191e` |
-| Card | `#ffffff` | `#1d2229` |
-| Foreground | `#20252c` | `#e6eaf0` |
-| Muted foreground | `#5f6875` | `#a2adbb` |
-| Border | `#dce1e7` | `#343d49` |
-| Focus ring | `#477aaf` | `#91b8e6` |
-| Success | `#258c66` | `#55bf94` |
-| Failure | `#d44759` | `#e66b7c` |
-| Running | `#3d80ca` | `#6ca9eb` |
-| Waiting / queued | `#b1841c` | `#dabb57` |
-| Attention | `#c16d32` | `#e29a69` |
-| Other outcomes | `#7d8997` | `#758292` |
-
-Status text uses dedicated darker light-theme and lighter dark-theme tokens.
-Pair colors with visible latest-status labels and accessible run descriptions.
+Import Kit UI controls directly from `@kenn-io/kit-ui`. Keep local components
+for CI presentation or app-specific behavior rather than pass-through aliases.
+Keep visible terminal outcomes and accessible run descriptions; never collapse
+distinct outcomes.
 
 ## Layout and type
 
@@ -45,9 +35,9 @@ Spacing and row separators establish grouping without shadows.
 
 ## Interaction and states
 
-Native labeled search/select controls and local Button/Input/Select primitives
-share semantic fields and visible focus. Filters persist in the URL. Refresh
-reloads cached server state. Background reads retain the previous overview on
+Labeled Kit UI search and keyboard-accessible select controls share semantic
+fields and visible focus. Filters persist in the URL. Refresh reloads cached
+server state. Background reads retain the previous overview on
 failure and expose Retry; upstream health remains separately visible.
 
 History shows the server's complete displayed sample, normally 30 runs, oldest
@@ -59,7 +49,11 @@ links or invented metrics. Missing metrics use an em dash; zero duration is 0s.
 
 Keep initial loading, collection in progress, no observed workflows, no filter
 matches, request failure, stale repositories and unavailable selections distinct.
-Rows show branch scope without observed-run counts or coverage labels. The
+Rows show branch scope without observed-run counts or coverage labels. A small
+warning Chip labeled "Not on branch" sits beside the branch when the server has
+verified that the workflow file is absent. Its tooltip explains that historical
+runs remain available. This marker is independent of run outcome and stale-data
+notices; unknown file status and all-branch views have no removal marker. The
 header has Refresh without collection timestamps. Source diagnostics appear
 in a native disclosure below workflows, collapsed by default; successful empty
 scans produce no notices. Errors, pending sources and incomplete scans retain

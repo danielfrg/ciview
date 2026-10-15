@@ -2,8 +2,10 @@ package ci
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -114,6 +116,10 @@ func (s *OverviewService) workflows(snapshot RepositorySnapshot) []Workflow {
 			name = workflowID
 		}
 		row := Workflow{Key: stableKey(snapshot.Repository.Key, workflowID), Repository: snapshot.Repository, WorkflowID: workflowID, WorkflowURL: latest.WorkflowURL, Name: name, BranchScope: branchScope, Runs: owned, LatestRun: &latest, Coverage: copyCoverage(snapshot.Coverage), Health: copyHealth(snapshot.Health)}
+		if snapshot.WorkflowFilesBranch == branchScope && branchScope != "all" && latest.WorkflowFile != "" && !strings.HasPrefix(latest.WorkflowFile, "dynamic/") {
+			exists := slices.Contains(snapshot.WorkflowFiles, latest.WorkflowFile)
+			row.FileExists = &exists
+		}
 		success, eligible := 0, 0
 		selectedCompleted := false
 		for i := len(owned) - 1; i >= 0; i-- {

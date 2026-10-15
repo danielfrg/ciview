@@ -157,3 +157,76 @@ func TestLoadRejectsMalformedUserNames(t *testing.T) {
 		})
 	}
 }
+
+func TestExistingWorkflowsOnlyIsOptionalAndSourceScoped(t *testing.T) {
+	cfg, err := Load(writeConfig(t, `
+[[sources]]
+name="default"
+provider="github"
+repos=["example/default"]
+[[sources]]
+name="filtered"
+provider="github"
+repos=["example/filtered"]
+existing_workflows_only=true
+[[sources]]
+name="history"
+provider="forgejo"
+base_url="https://forgejo.example.net"
+repos=["example/history"]
+existing_workflows_only=false
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range []bool{false, true, false} {
+		if cfg.Sources[i].ExistingWorkflowsOnly != want {
+			t.Fatalf("source %s: existing_workflows_only=%v, want %v", cfg.Sources[i].Name, cfg.Sources[i].ExistingWorkflowsOnly, want)
+		}
+	}
+	_, err = Load(writeConfig(t, `[[sources]]
+name="invalid"
+provider="github"
+repos=["example/project"]
+existing_workflows_only="true"
+`))
+	if err == nil {
+		t.Fatal("non-boolean existing_workflows_only accepted")
+	}
+}
+
+func TestShowDependabotUpdatesDefaultsToFalsePerSource(t *testing.T) {
+	cfg, err := Load(writeConfig(t, `
+[[sources]]
+name="default"
+provider="github"
+repos=["example/default"]
+[[sources]]
+name="show"
+provider="github"
+repos=["example/show"]
+show_dependabot_updates=true
+[[sources]]
+name="hide"
+provider="github"
+repos=["example/hide"]
+show_dependabot_updates=false
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range []bool{false, true, false} {
+		if cfg.Sources[i].ShowDependabotUpdates != want {
+			t.Fatalf("source %s: show_dependabot_updates=%v want %v", cfg.Sources[i].Name, cfg.Sources[i].ShowDependabotUpdates, want)
+		}
+	}
+	_, err = Load(writeConfig(t, `[[sources]]
+name="invalid"
+provider="github"
+repos=["example/project"]
+show_dependabot_updates="false"
+`))
+	if err == nil {
+		t.Fatal("non-boolean show_dependabot_updates accepted")
+	}
+}

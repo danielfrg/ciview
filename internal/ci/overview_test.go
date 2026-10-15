@@ -214,3 +214,44 @@ func TestOverviewWorkflowURLUsesLatestAvailableMetadataInItsGroup(t *testing.T) 
 		})
 	}
 }
+
+func TestWorkflowFilePresenceRequiresMatchingVerifiedBranch(t *testing.T) {
+	for _, tc := range []struct {
+		name, scope, catalogBranch, file string
+		exists, known                    bool
+	}{
+		{"present", "default", "main", ".github/workflows/test.yml", true, true},
+		{"removed", "default", "main", ".github/workflows/check.yml", false, true},
+		{"unchecked", "default", "", ".github/workflows/check.yml", false, false},
+		{"another branch", "release", "main", ".github/workflows/check.yml", false, false},
+		{"all branches", "all", "main", ".github/workflows/check.yml", false, false},
+		{"generated", "default", "main", "dynamic/dependabot/dependabot-updates", false, false},
+		{"missing identity", "default", "main", "", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			store := snapshots.NewMemory()
+			repo := ci.Repository{Key: "repo", Source: "github", Provider: "github", DefaultBranch: "main"}
+			branch := "main"
+			if tc.scope == "release" {
+				branch = "release"
+			}
+			snapshot := ci.RepositorySnapshot{Repository: repo, WorkflowFiles: []string{".github/workflows/test.yml"}, WorkflowFilesBranch: tc.catalogBranch, Runs: []ci.Run{{ID: "1", WorkflowID: "test", WorkflowFile: tc.file, Branch: branch, State: "success", Terminal: true}}}
+			if err := store.Write(ctx, snapshot); err != nil {
+				t.Fatal(err)
+			}
+			inventory := fixtureInventory{ci.Inventory{Sources: []ci.SourceState{{Repositories: []ci.RepositoryKey{repo.Key}}}}}
+			result, err := ci.NewOverview(store, inventory, 30, tc.scope, time.Minute).Overview(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(result.Workflows) != 1 {
+				t.Fatal("missing historical workflow")
+			}
+			value := result.Workflows[0].FileExists
+			if (value != nil) != tc.known || value != nil && *value != tc.exists {
+				t.Fatalf("file_exists=%v want known=%v exists=%v", value, tc.known, tc.exists)
+			}
+		})
+	}
+}
