@@ -148,3 +148,13 @@ test('source notices keep errors, limited history and state-only pending sources
  ]);
  assert.deepEqual(sources, before);
 });
+
+test('preserves verified workflow file presence and treats an older API as unknown', () => {
+ for (const value of [true, false, null]) {
+  const data = overview(); Object.assign(data.workflows[0], { file_exists: value });
+  assert.equal(parseOverview(data).workflows[0].file_exists, value);
+ }
+ assert.equal(parseOverview(overview()).workflows[0].file_exists, null);
+ const bad = overview(); Object.assign(bad.workflows[0], { file_exists: 'false' });
+ assert.throws(() => parseOverview(bad));
+});

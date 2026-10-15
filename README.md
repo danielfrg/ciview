@@ -81,6 +81,41 @@ orgs = ["example-org"]
 repos = ["example-owner/example-repository"]
 ```
 
+`branch = "default"` uses each repository's default branch (usually `main`).
+A named branch such as `branch = "release"` uses that branch instead.
+
+Sources include historical workflows by default, even when their files have
+been deleted. Rows show a **Not on branch** badge when a successful check confirms
+that the workflow file is absent from the selected branch. Unverified file status
+and all-branch views receive no removal badge. To hide those workflows for one
+source, set this inside its `[[sources]]` block:
+
+```toml
+existing_workflows_only = true
+```
+
+The default is `false`. When enabled, only workflows whose files still exist
+on the selected branch are shown; removed workflows disappear after the next
+successful refresh. If branch contents cannot be read, previous rows remain
+visible as stale data. This option has no effect with `branch = "all"`, which
+keeps historical workflows across all branches. GitHub fine-grained tokens need
+repository Contents read access in addition to Actions read access to verify
+workflow files. Without Contents access, history remains available when this
+option is disabled, with a file-status notice.
+
+GitHub-generated Dependabot update and dependency-graph workflows are hidden
+by default. To include them for a source, add this to its `[[sources]]` block:
+
+```toml
+show_dependabot_updates = true
+```
+
+The default is `false`, including with `branch = "all"`. This matches GitHub's
+`dynamic/dependabot/` workflow paths; regular CI workflows triggered by Dependabot
+pull requests remain visible within the configured branch scope. The
+`existing_workflows_only` filter still applies when enabled, so leave it `false`
+to include generated workflows in named/default branch views.
+
 Forgejo token requires:
 
 - Repository → Read (read:repository)

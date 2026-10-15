@@ -55,6 +55,7 @@ func (m *Memory) List(ctx context.Context) ([]ci.RepositorySnapshot, error) {
 
 func cloneSnapshot(v ci.RepositorySnapshot) ci.RepositorySnapshot {
 	out := v
+	out.WorkflowFiles = append([]string(nil), v.WorkflowFiles...)
 	out.Runs = make([]ci.Run, len(v.Runs))
 	for i, run := range v.Runs {
 		out.Runs[i] = run
