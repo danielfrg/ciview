@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"civiewer/internal/ci"
+	"ciview/internal/ci"
 	"context"
 	"errors"
 	"fmt"

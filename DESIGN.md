@@ -1,4 +1,4 @@
-# CI viewer design
+# CI View design
 
 ## Foundation
 

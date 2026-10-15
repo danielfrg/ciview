@@ -18,7 +18,7 @@ var envName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 // Load reads startup configuration. Credentials remain references until runtime wiring.
 func Load(path string) (Config, error) {
 	if path == "" {
-		path = "civiewer.toml"
+		path = "ciview.toml"
 	}
 	file, err := os.Open(path)
 	if err != nil {

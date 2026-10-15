@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-civiewer.toml
+ciview.toml
 
 # Local planning and agent work
 docs/superpowers/
@@ -10,7 +10,7 @@ docs/superpowers/
 .impeccable/
 
 # Build outputs
-/civiewer
+/ciview
 frontend/node_modules/
 frontend/dist/
 internal/web/dist/*

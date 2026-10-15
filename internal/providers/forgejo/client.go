@@ -2,8 +2,8 @@
 package forgejo
 
 import (
-	"civiewer/internal/ci"
-	"civiewer/internal/providers/rest"
+	"ciview/internal/ci"
+	"ciview/internal/providers/rest"
 	"context"
 	"encoding/json"
 	"net/http"

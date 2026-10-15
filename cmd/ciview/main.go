@@ -11,14 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"civiewer/internal/ci"
-	"civiewer/internal/config"
-	"civiewer/internal/httpapi"
-	"civiewer/internal/providers/forgejo"
-	"civiewer/internal/providers/github"
-	"civiewer/internal/refresh"
-	"civiewer/internal/snapshots"
-	"civiewer/internal/web"
+	"ciview/internal/ci"
+	"ciview/internal/config"
+	"ciview/internal/httpapi"
+	"ciview/internal/providers/forgejo"
+	"ciview/internal/providers/github"
+	"ciview/internal/refresh"
+	"ciview/internal/snapshots"
+	"ciview/internal/web"
 )
 
 func envDefault(name, fallback string) string {
@@ -31,7 +31,7 @@ func envDefault(name, fallback string) string {
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, envDefault("CIVIEWER_CONFIG", "civiewer.toml"), envDefault("CIVIEWER_ADDR", "127.0.0.1:8080")); err != nil {
+	if err := run(ctx, envDefault("CIVIEW_CONFIG", "ciview.toml"), envDefault("CIVIEW_ADDR", "127.0.0.1:8080")); err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}
@@ -68,7 +68,7 @@ func run(ctx context.Context, path, addr string) error {
 	server := &http.Server{Addr: addr, Handler: httpapi.NewHandler(web.Assets(), overview), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		return errors.New("Unable to listen on CIVIEWER_ADDR")
+		return errors.New("Unable to listen on CIVIEW_ADDR")
 	}
 	refreshCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

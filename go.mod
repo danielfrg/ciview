@@ -1,4 +1,4 @@
-module civiewer
+module ciview
 
 go 1.25.0
 

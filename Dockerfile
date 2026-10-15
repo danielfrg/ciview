@@ -13,18 +13,18 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
-COPY civiewer.example.toml ./civiewer.example.toml
+COPY ciview.example.toml ./ciview.example.toml
 COPY --from=frontend /src/dist/ ./internal/web/dist/
 RUN test -s internal/web/dist/index.html && go test ./... && go vet ./...
 ARG TARGETOS
 ARG TARGETARCH
-RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/civiewer ./cmd/civiewer
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/ciview ./cmd/ciview
 
 FROM gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
 WORKDIR /app
-COPY --from=build /out/civiewer /app/civiewer
-COPY --from=build /src/civiewer.example.toml /app/civiewer.toml
-ENV CIVIEWER_CONFIG=/app/civiewer.toml CIVIEWER_ADDR=0.0.0.0:8080
+COPY --from=build /out/ciview /app/ciview
+COPY --from=build /src/ciview.example.toml /app/ciview.toml
+ENV CIVIEW_CONFIG=/app/ciview.toml CIVIEW_ADDR=0.0.0.0:8080
 EXPOSE 8080
 USER 65532:65532
-ENTRYPOINT ["/app/civiewer"]
+ENTRYPOINT ["/app/ciview"]

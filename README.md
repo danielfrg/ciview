@@ -1,4 +1,4 @@
-# CI viewer
+# CI View
 
 GitHub Actions and Forgejo Actions viewer.
 
@@ -8,10 +8,10 @@ Requires Go 1.25, Node 26, pnpm 10 and just.
 
 ```shell
 pnpm --dir frontend install --frozen-lockfile
-cp civiewer.example.toml civiewer.toml
+cp ciview.example.toml ciview.toml
 ```
 
-Edit `civiewer.toml` with your source selections and credential references.
+Edit `ciview.toml` with your source selections and credential references.
 See [configuration](docs/configuration.md) and [credentials](docs/credentials.md).
 Start the API and frontend in separate terminals:
 
@@ -29,8 +29,8 @@ just check
 just build
 ```
 
-The Go executable embeds the frontend. `CIVIEWER_CONFIG` selects the TOML file;
-`CIVIEWER_ADDR` selects the listen address, defaulting to `127.0.0.1:8080`.
+The Go executable embeds the frontend. `CIVIEW_CONFIG` selects the TOML file;
+`CIVIEW_ADDR` selects the listen address, defaulting to `127.0.0.1:8080`.
 
 ## Container image
 
@@ -39,7 +39,7 @@ images on pull requests. The Dockerfile runs the frontend tests, type checks and
 build, then Go tests and vet before compiling the embedded server.
 
 Pushes to `main` and manual runs on `main` publish
-`ghcr.io/danielfrg/civiewer:latest` and `ghcr.io/danielfrg/civiewer:sha-<commit>`.
+`ghcr.io/danielfrg/ciview:latest` and `ghcr.io/danielfrg/ciview:sha-<commit>`.
 Publishing uses the built-in `GITHUB_TOKEN`; no additional CI secrets are needed.
 
 ## Config
@@ -64,7 +64,7 @@ repos = ["actions/checkout"]
 users = ["danielfrg"]
 
 # For private repositories or a higher GitHub API allowance, add one credential:
-token_env = "CIVIEWER_GITHUB_TOKEN"
+token_env = "CIVIEW_GITHUB_TOKEN"
 token_file = "/run/secrets/github-token"
 orgs = ["example-org"]
 repos = ["example-org/private-repository"]
@@ -74,7 +74,7 @@ repos = ["example-org/private-repository"]
 name = "forgejo"
 provider = "forgejo"
 base_url = "https://forgejo.example.net"
-token_env = "CIVIEWER_FORGEJO_TOKEN"
+token_env = "CIVIEW_FORGEJO_TOKEN"
 
 users = ["danielfrg"]
 orgs = ["example-org"]

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"civiewer/internal/ci"
+	"ciview/internal/ci"
 )
 
 func TestModelsEncodeSnakeCaseAndEmptyArrays(t *testing.T) {

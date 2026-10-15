@@ -1,4 +1,4 @@
-# CI viewer
+# CI View
 
 Read-only overview of GitHub Actions and Forgejo Actions.
 
@@ -21,4 +21,4 @@ inspecting a recent run sample, and opening the exact provider run quickly.
 - Preserve useful rows during outages and explain stale or partial data.
 - Keep configuration and credentials on the Go server.
 - Search and filters survive refresh and browser navigation.
-- The providers own logs and run actions; CI viewer links to them.
+- The providers own logs and run actions; CI View links to them.

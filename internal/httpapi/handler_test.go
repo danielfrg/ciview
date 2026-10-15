@@ -11,7 +11,7 @@ import (
 	"testing/fstest"
 	"time"
 
-	"civiewer/internal/ci"
+	"ciview/internal/ci"
 )
 
 type overviewReader struct {
@@ -60,7 +60,7 @@ func TestErrorsAreSanitized(t *testing.T) {
 }
 func TestOpenAPIAndStaticRouting(t *testing.T) {
 	r := &overviewReader{}
-	h := NewHandler(fstest.MapFS{"index.html": {Data: []byte("Civiewer app")}, "assets/app.js": {Data: []byte("export const app=true")}, ".env": {Data: []byte("secret")}}, r)
+	h := NewHandler(fstest.MapFS{"index.html": {Data: []byte("CI View app")}, "assets/app.js": {Data: []byte("export const app=true")}, ".env": {Data: []byte("secret")}}, r)
 	for _, path := range []string{"/api/openapi.json", "/api/openapi.yaml", "/api/docs", "/", "/assets/app.js"} {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, httptest.NewRequest("GET", path, nil))

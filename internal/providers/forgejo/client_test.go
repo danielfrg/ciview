@@ -1,7 +1,7 @@
 package forgejo
 
 import (
-	"civiewer/internal/ci"
+	"ciview/internal/ci"
 	"context"
 	"encoding/json"
 	"fmt"
