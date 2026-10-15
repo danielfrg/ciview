@@ -274,6 +274,7 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 	// sources exclude missing files. All-branch views have no single ref to check.
 	var workflowFiles map[string]bool
 	var catalogFiles []string
+	var catalogNames map[string]string
 	var catalogBranch string
 	var catalogError error
 	if c.cfg.Viewer.Branch != "all" {
@@ -284,7 +285,16 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 		if err := c.cooldownError(s); err != nil {
 			return c.fail(ctx, s, r, prior, found, now, err)
 		}
-		files, err := s.provider.ListWorkflowFiles(call, r, branch)
+		var files []string
+		var err error
+		if provider, ok := s.provider.(ci.WorkflowCatalogProvider); ok {
+			var catalog ci.WorkflowCatalog
+			catalog, err = provider.ListWorkflowCatalog(call, r, branch)
+			files, catalogNames = catalog.Files, catalog.Names
+			c.deferSource(s, catalog.MetadataError)
+		} else {
+			files, err = s.provider.ListWorkflowFiles(call, r, branch)
+		}
 		if err != nil {
 			if s.config.ExistingWorkflowsOnly {
 				return c.fail(ctx, s, r, prior, found, now, err)
@@ -440,7 +450,7 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 		health.RetryAt = &t
 	}
 	c.mu.RUnlock()
-	snap := ci.RepositorySnapshot{Repository: r, Runs: retained, Coverage: coverage, Health: health, WorkflowFiles: catalogFiles, WorkflowFilesBranch: catalogBranch}
+	snap := ci.RepositorySnapshot{Repository: r, Runs: retained, Coverage: coverage, Health: health, WorkflowNames: catalogNames, WorkflowFiles: catalogFiles, WorkflowFilesBranch: catalogBranch}
 	if err := c.store.Write(ctx, snap); err != nil {
 		return errors.New("snapshot store write failed")
 	}

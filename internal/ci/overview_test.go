@@ -255,3 +255,48 @@ func TestWorkflowFilePresenceRequiresMatchingVerifiedBranch(t *testing.T) {
 		})
 	}
 }
+
+func TestForgejoDisplayTitlesPreserveIdentityAndBranchScope(t *testing.T) {
+	for _, scope := range []string{"default", "release", "all"} {
+		t.Run(scope, func(t *testing.T) {
+			ctx := context.Background()
+			store := snapshots.NewMemory()
+			repo := ci.Repository{Key: "forge/repo", Source: "forge", Provider: "forgejo", DefaultBranch: "main"}
+			snapshot := ci.RepositorySnapshot{Repository: repo, WorkflowFilesBranch: "main", WorkflowFiles: []string{"docker.yml", "other.yml"}, WorkflowNames: map[string]string{"docker.yml": "Docker", "other.yml": "Docker"}}
+			for i, file := range []string{"docker.yml", "other.yml", "removed.yml"} {
+				snapshot.Runs = append(snapshot.Runs, ci.Run{ID: fmt.Sprint(i + 1), WorkflowID: file, WorkflowFile: file, WorkflowName: file, Branch: "main", State: "success", Terminal: true, URL: "https://forge.example/project/actions/runs/1"})
+			}
+			if err := store.Write(ctx, snapshot); err != nil {
+				t.Fatal(err)
+			}
+			inventory := fixtureInventory{ci.Inventory{Sources: []ci.SourceState{{Name: "forge", Repositories: []ci.RepositoryKey{repo.Key}}}}}
+			result, err := ci.NewOverview(store, inventory, 30, scope, time.Minute).Overview(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if scope == "release" {
+				if len(result.Workflows) != 0 {
+					t.Fatal("wrong branch rows")
+				}
+				return
+			}
+			if len(result.Workflows) != 3 {
+				t.Fatalf("rows=%v", result.Workflows)
+			}
+			keys := map[string]bool{}
+			for _, w := range result.Workflows {
+				if keys[w.Key] {
+					t.Fatal("duplicate row identity")
+				}
+				keys[w.Key] = true
+				want := w.WorkflowID
+				if scope == "default" && w.WorkflowID != "removed.yml" {
+					want = "Docker"
+				}
+				if w.Name != want || w.LatestRun.URL != "https://forge.example/project/actions/runs/1" {
+					t.Fatalf("row=%+v", w)
+				}
+			}
+		})
+	}
+}

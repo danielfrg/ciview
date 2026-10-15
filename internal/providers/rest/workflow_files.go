@@ -13,12 +13,17 @@ import (
 // the Actions registry, which retains deleted workflows and historical runs.
 // GitHub identities are repository paths; Forgejo run identities are filenames.
 func (t *Transport) ListWorkflowFiles(ctx context.Context, repository ci.Repository, branch string) ([]string, error) {
+	files, _, err := t.workflowFiles(ctx, repository, branch)
+	return files, err
+}
+
+func (t *Transport) workflowFiles(ctx context.Context, repository ci.Repository, branch string) ([]string, string, error) {
 	if strings.TrimSpace(branch) == "" {
-		return nil, Error("invalid_data", "Repository branch was unavailable")
+		return nil, "", Error("invalid_data", "Repository branch was unavailable")
 	}
 	p, err := RepoPath(repository)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	directories := []string{".github/workflows"}
 	if t.Provider == "forgejo" {
@@ -33,7 +38,7 @@ func (t *Transport) ListWorkflowFiles(ctx context.Context, repository ci.Reposit
 	for _, directory := range directories {
 		target, err := t.Endpoint(p+"/contents/"+directory, query)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		var entries []entry
 		_, err = t.Get(ctx, target, &entries)
@@ -42,12 +47,12 @@ func (t *Transport) ListWorkflowFiles(ctx context.Context, repository ci.Reposit
 			if errors.As(err, &pe) && pe.Kind == "not_found" {
 				continue
 			}
-			return nil, err
+			return nil, "", err
 		}
 		// GitHub directory listings are capped at 1,000 entries. Never publish an
 		// incomplete catalog as proof that older workflows were removed.
 		if entries == nil || (t.Provider == "github" && len(entries) >= 1000) {
-			return nil, Error("invalid_data", "Provider workflow directory was incomplete")
+			return nil, "", Error("invalid_data", "Provider workflow directory was incomplete")
 		}
 		files := make([]string, 0, len(entries))
 		for _, entry := range entries {
@@ -55,7 +60,7 @@ func (t *Transport) ListWorkflowFiles(ctx context.Context, repository ci.Reposit
 				continue
 			}
 			if _, err := Segment(entry.Name); err != nil || entry.Path != directory+"/"+entry.Name {
-				return nil, Error("invalid_data", "Provider workflow file was invalid")
+				return nil, "", Error("invalid_data", "Provider workflow file was invalid")
 			}
 			identity := entry.Path
 			if t.Provider == "forgejo" {
@@ -63,20 +68,20 @@ func (t *Transport) ListWorkflowFiles(ctx context.Context, repository ci.Reposit
 			}
 			files = append(files, identity)
 		}
-		return files, nil
+		return files, directory, nil
 	}
 	// A directory 404 can also mean a missing branch or revoked repository
 	// access. Confirm the branch root is readable before publishing no workflows.
 	target, err := t.Endpoint(p+"/contents", query)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var root []entry
 	if _, err = t.Get(ctx, target, &root); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if root == nil {
-		return nil, Error("invalid_data", "Provider branch contents were invalid")
+		return nil, "", Error("invalid_data", "Provider branch contents were invalid")
 	}
-	return []string{}, nil
+	return []string{}, "", nil
 }

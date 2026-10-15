@@ -2,6 +2,7 @@ package refresh
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -41,6 +42,10 @@ func TestProvidersRemoveHistoricalWorkflowRowsWhenBranchFileIsDeleted(t *testing
 						fmt.Fprintf(w, `,{"name":"removed.yml","path":%q,"type":"file"}`, dir+"/removed.yml")
 					}
 					fmt.Fprint(w, `]`)
+				case "/repos/example/project/contents/.forgejo/workflows/ci.yml":
+					fmt.Fprintf(w, `{"type":"file","path":".forgejo/workflows/ci.yml","encoding":"base64","content":%q}`, base64.StdEncoding.EncodeToString([]byte("name: Test\n")))
+				case "/repos/example/project/contents/.forgejo/workflows/removed.yml":
+					http.NotFound(w, r) // Missing optional name must not imply file removal.
 				case "/repos/example/project/actions/runs":
 					if kind == "github" {
 						fmt.Fprint(w, `{"total_count":2,"workflow_runs":[{"id":1,"workflow_id":11,"path":".github/workflows/ci.yml","name":"CI","head_branch":"main","event":"push","status":"in_progress","created_at":"2026-10-14T12:00:00Z"},{"id":2,"workflow_id":12,"path":".github/workflows/removed.yml","name":"Removed","head_branch":"main","event":"push","status":"in_progress","created_at":"2026-10-14T12:01:00Z"}]}`)
@@ -86,6 +91,12 @@ func TestProvidersRemoveHistoricalWorkflowRowsWhenBranchFileIsDeleted(t *testing
 					t.Fatalf("deleted=%v rows=%+v", remove, result.Workflows)
 				}
 				for _, row := range result.Workflows {
+					if kind == "forgejo" && row.WorkflowID == "ci.yml" && row.Name != "Test" {
+						t.Fatalf("catalog title not published: %+v", row)
+					}
+					if kind == "forgejo" && row.WorkflowID == "removed.yml" && row.Name != "removed.yml" {
+						t.Fatalf("metadata failure changed fallback: %+v", row)
+					}
 					exists := !remove || row.LatestRun.ID == "1"
 					if row.FileExists == nil || *row.FileExists != exists {
 						t.Fatalf("wrong workflow marker: %+v", row)

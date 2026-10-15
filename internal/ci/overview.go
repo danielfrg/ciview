@@ -112,6 +112,11 @@ func (s *OverviewService) workflows(snapshot RepositorySnapshot) []Workflow {
 		}
 		latest := copyRun(owned[len(owned)-1])
 		name := latest.WorkflowName
+		if snapshot.Repository.Provider == "forgejo" && snapshot.WorkflowFilesBranch == branchScope && branchScope != "all" {
+			if title := snapshot.WorkflowNames[workflowID]; title != "" {
+				name = title
+			}
+		}
 		if name == "" {
 			name = workflowID
 		}
