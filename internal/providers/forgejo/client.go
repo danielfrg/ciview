@@ -36,6 +36,10 @@ func (c *Client) ListWorkflowFiles(ctx context.Context, r ci.Repository, branch 
 	return c.transport.ListWorkflowFiles(ctx, r, branch)
 }
 
+func (c *Client) ListWorkflowCatalog(ctx context.Context, r ci.Repository, branch string) (ci.WorkflowCatalog, error) {
+	return c.transport.ListWorkflowCatalog(ctx, r, branch)
+}
+
 type runResponse struct {
 	ID         json.Number `json:"id"`
 	WorkflowID string      `json:"workflow_id"`

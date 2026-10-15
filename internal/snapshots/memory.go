@@ -2,6 +2,7 @@ package snapshots
 
 import (
 	"context"
+	"maps"
 	"sort"
 	"sync"
 	"time"
@@ -55,6 +56,7 @@ func (m *Memory) List(ctx context.Context) ([]ci.RepositorySnapshot, error) {
 
 func cloneSnapshot(v ci.RepositorySnapshot) ci.RepositorySnapshot {
 	out := v
+	out.WorkflowNames = maps.Clone(v.WorkflowNames)
 	out.WorkflowFiles = append([]string(nil), v.WorkflowFiles...)
 	out.Runs = make([]ci.Run, len(v.Runs))
 	for i, run := range v.Runs {

@@ -58,12 +58,13 @@ type Health struct {
 }
 
 type RepositorySnapshot struct {
-	WorkflowFiles       []string   `json:"-"`
-	WorkflowFilesBranch string     `json:"-"`
-	Repository          Repository `json:"repository"`
-	Runs                []Run      `json:"runs"`
-	Coverage            Coverage   `json:"coverage"`
-	Health              Health     `json:"health"`
+	WorkflowNames       map[string]string `json:"-"`
+	WorkflowFiles       []string          `json:"-"`
+	WorkflowFilesBranch string            `json:"-"`
+	Repository          Repository        `json:"repository"`
+	Runs                []Run             `json:"runs"`
+	Coverage            Coverage          `json:"coverage"`
+	Health              Health            `json:"health"`
 }
 
 type Issue struct {
@@ -97,6 +98,20 @@ type Discovery struct {
 type RunPage struct {
 	Runs []Run `json:"runs"`
 	Next bool  `json:"next"`
+}
+
+// WorkflowCatalog carries branch-scoped file identities and optional display titles.
+type WorkflowCatalog struct {
+	// MetadataError preserves optional lookup throttling without invalidating Files.
+	MetadataError error
+	Files         []string
+	Names         map[string]string
+}
+
+// WorkflowCatalogProvider enriches file discovery without requiring title support
+// from providers whose run payloads already include workflow display names.
+type WorkflowCatalogProvider interface {
+	ListWorkflowCatalog(context.Context, Repository, string) (WorkflowCatalog, error)
 }
 
 type Provider interface {

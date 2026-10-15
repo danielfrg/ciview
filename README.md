@@ -84,6 +84,10 @@ repos = ["example-owner/example-repository"]
 `branch = "default"` uses each repository's default branch (usually `main`).
 A named branch such as `branch = "release"` uses that branch instead.
 
+Forgejo rows use the selected branch’s workflow `name:` when it is available.
+Missing or unreadable titles fall back to the workflow filename. All-branch
+views keep the names supplied by the provider.
+
 Sources include historical workflows by default, even when their files have
 been deleted. Rows show a **Not on branch** badge when a successful check confirms
 that the workflow file is absent from the selected branch. Unverified file status
