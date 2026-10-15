@@ -32,6 +32,16 @@ just build
 The Go executable embeds the frontend. `CIVIEWER_CONFIG` selects the TOML file;
 `CIVIEWER_ADDR` selects the listen address, defaulting to `127.0.0.1:8080`.
 
+## Container image
+
+The [Docker workflow](.github/workflows/docker.yml) builds Linux amd64 and arm64
+images on pull requests. The Dockerfile runs the frontend tests, type checks and
+build, then Go tests and vet before compiling the embedded server.
+
+Pushes to `main` and manual runs on `main` publish
+`ghcr.io/danielfrg/civiewer:latest` and `ghcr.io/danielfrg/civiewer:sha-<commit>`.
+Publishing uses the built-in `GITHUB_TOKEN`; no additional CI secrets are needed.
+
 ## Config
 
 Configuration is done via TOML files.
