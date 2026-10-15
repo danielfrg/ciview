@@ -16,14 +16,16 @@ type Viewer struct {
 }
 
 type Source struct {
-	Name      string   `toml:"name"`
-	Provider  string   `toml:"provider"`
-	BaseURL   string   `toml:"base_url"`
-	TokenEnv  string   `toml:"token_env"`
-	TokenFile string   `toml:"token_file"`
-	Orgs      []string `toml:"orgs"`
-	Users     []string `toml:"users"`
-	Repos     []string `toml:"repos"`
+	ShowDependabotUpdates bool     `toml:"show_dependabot_updates"`
+	ExistingWorkflowsOnly bool     `toml:"existing_workflows_only"`
+	Name                  string   `toml:"name"`
+	Provider              string   `toml:"provider"`
+	BaseURL               string   `toml:"base_url"`
+	TokenEnv              string   `toml:"token_env"`
+	TokenFile             string   `toml:"token_file"`
+	Orgs                  []string `toml:"orgs"`
+	Users                 []string `toml:"users"`
+	Repos                 []string `toml:"repos"`
 }
 
 func (v Viewer) RefreshDuration() time.Duration {

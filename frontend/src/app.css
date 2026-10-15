@@ -1,47 +1,31 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@custom-variant dark (&:where(.dark, .dark *));
-
+/* Kit UI owns the palette and control styling. CI-specific aliases keep
+   run outcomes and the broad workflow layout independent of the library. */
 :root {
- font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
- color-scheme: light dark;
- --background: #f7f8fa; --foreground: #20252c; --card: #ffffff; --card-foreground: #20252c;
- --primary: #252b34; --primary-foreground: #ffffff; --secondary: #edf0f3; --secondary-foreground: #20252c;
- --muted: #edf0f3; --muted-foreground: #5f6875; --accent: #edf0f3; --accent-foreground: #20252c;
- --border: #dce1e7; --input: #cbd2db; --ring: #477aaf; --destructive: #b72e42;
- --success: #258c66; --success-text: #166846; --failure: #d44759; --failure-text: #b0273b;
- --running: #3d80ca; --running-text: #27619f; --waiting: #b1841c; --waiting-text: #805a05;
- --neutral: #7d8997; --neutral-text: #5b6572; --attention: #c16d32; --attention-text: #995017;
- --empty-run: #e9edf1; --notice: #faf5e9; --notice-foreground: #6b511d; --radius: 0.375rem;
+ font-family: var(--font-sans);
+ --background: var(--bg-primary); --foreground: var(--text-primary);
+ --card: var(--bg-surface); --muted: var(--bg-inset);
+ --muted-foreground: var(--text-secondary); --border: var(--border-default);
+ --input: var(--border-default); --ring: var(--accent-blue);
+ --primary: var(--text-primary); --primary-foreground: var(--bg-surface);
+ --success: var(--accent-green); --failure: var(--accent-red);
+ --running: var(--accent-blue); --waiting: var(--accent-amber);
+ --neutral: var(--text-muted); --attention: var(--accent-amber);
+ --success-text: color-mix(in srgb, var(--success) 72%, var(--foreground));
+ --failure-text: color-mix(in srgb, var(--failure) 72%, var(--foreground));
+ --running-text: color-mix(in srgb, var(--running) 72%, var(--foreground));
+ --waiting-text: color-mix(in srgb, var(--waiting) 72%, var(--foreground));
+ --neutral-text: var(--text-secondary); --attention-text: var(--waiting-text);
+ --empty-run: var(--bg-inset);
+ --notice: color-mix(in srgb, var(--accent-amber) 9%, var(--bg-surface));
+ --notice-foreground: color-mix(in srgb, var(--accent-amber) 55%, var(--text-primary));
+ --kit-control-height: 40px; --kit-control-font-size: var(--font-size-md);
 }
-@media (prefers-color-scheme: dark) {
- :root {
-  --background: #16191e; --foreground: #e6eaf0; --card: #1d2229; --card-foreground: #e6eaf0;
-  --primary: #e6eaf0; --primary-foreground: #16191e; --secondary: #2b323c; --secondary-foreground: #e6eaf0;
-  --muted: #2b323c; --muted-foreground: #a2adbb; --accent: #2b323c; --accent-foreground: #e6eaf0;
-  --border: #343d49; --input: #465160; --ring: #91b8e6; --destructive: #fa8897;
-  --success: #55bf94; --success-text: #83d7b2; --failure: #e66b7c; --failure-text: #fa98a7;
-  --running: #6ca9eb; --running-text: #9cc6f4; --waiting: #dabb57; --waiting-text: #e6c76c;
-  --neutral: #758292; --neutral-text: #adb7c4; --attention: #e29a69; --attention-text: #efb189;
-  --empty-run: #2d3540; --notice: #302b20; --notice-foreground: #e6cf9e;
- }
-}
-@theme inline {
- --color-background: var(--background); --color-foreground: var(--foreground);
- --color-card: var(--card); --color-card-foreground: var(--card-foreground);
- --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
- --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
- --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
- --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
- --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring); --color-destructive: var(--destructive);
- --radius-sm: calc(var(--radius) - 2px); --radius-md: var(--radius); --radius-lg: calc(var(--radius) + 2px);
-}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--background); color: var(--foreground); font-size: .875rem; line-height: 1.5; }
 button, input, select { font: inherit; }
 button, select { cursor: pointer; }
 input { caret-color: var(--foreground); }
-::selection { background: var(--primary); color: var(--primary-foreground); }
 a { color: inherit; text-decoration: none; text-underline-offset: 3px; }
 a:hover { text-decoration: underline; }
 a:focus-visible, button:focus-visible, [tabindex="0"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 3px; }
@@ -52,19 +36,32 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .refresh-status { color: var(--muted-foreground); font-size: .75rem; }
 .refresh-button { height: 40px; padding: 0 14px; font-size: .8125rem; }
 .filters { display: grid; grid-template-columns: minmax(240px, 2fr) minmax(130px, 1fr) minmax(125px, 1fr) minmax(180px, 1.3fr) minmax(130px, 1fr); gap: 10px; margin-bottom: 24px; }
-.filters label, .filters input, .filters select { width: 100%; min-width: 0; }
-.filter-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+.filters:has(.filter-actions) { grid-template-columns: minmax(240px, 2fr) minmax(130px, 1fr) minmax(125px, 1fr) minmax(180px, 1.3fr) minmax(130px, 1fr) max-content; }
+.filters > *, .filters .kit-select-dropdown { width: 100%; min-width: 0; }
+.filters .kit-text-input { min-height: var(--kit-control-height); font-size: var(--kit-control-font-size); }
+/* The field wrapper owns focus chrome; avoid nested input and wrapper rings. */
+.filters .kit-text-input:focus-within,
+.filters .kit-text-input:has(.kit-text-input__control:focus-visible) {
+ outline: none;
+ border-color: var(--accent-blue);
+ box-shadow: inset 0 0 0 1px var(--accent-blue);
+}
+.filters .kit-text-input .kit-text-input__control:focus-visible { outline: none; }
+/* Keep the anchor still while measuring and opening its fixed-position menu. */
+.filters .kit-select-dropdown__trigger { --press-transform: none; }
+.filter-actions { display: flex; align-items: center; justify-content: flex-end; }
 .clear-filters { height: 40px; padding: 0 14px; font-size: .8125rem; }
 .source-groups { display: grid; gap: 32px; }
 .source-group, .repository-group { min-width: 0; }
 .source-heading { margin: 0 0 16px; font-size: 1.125rem; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
 .repository-groups { display: grid; gap: 24px; }
-.repository-panel, .workflow-state { background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
-.workflow-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(270px, 1.2fr) minmax(265px, 1fr) 100px; align-items: center; column-gap: 24px; padding-inline: 24px; }
+.repository-panel, .workflow-state { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.workflow-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(270px, 1.2fr) minmax(265px, 1fr) 116px; align-items: center; column-gap: 24px; padding-inline: 24px; }
 .workflow-row { min-height: 118px; padding-block: 22px; border-top: 1px solid var(--border); }
 .workflow-row:first-child { border-top: 0; }
 .workflow-identity, .workflow-history { min-width: 0; }
 .workflow-title { margin: 0 0 4px; font-size: .9375rem; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
+.workflow-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .workflow-scope { color: var(--muted-foreground); font-size: .6875rem; overflow-wrap: anywhere; }
 .workflow-history { position: relative; }
 .run-history { display: grid; grid-template-columns: repeat(var(--run-count, 30), minmax(6px, 1fr)); gap: 3px; height: 44px; align-items: center; min-width: 267px; }
@@ -85,7 +82,7 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .workflow-metrics dt { font-size: .625rem; color: var(--muted-foreground); margin-bottom: 4px; }
 .workflow-metrics dd { margin: 0; font-size: .8125rem; font-weight: 550; }
 .latest-state { display: flex; align-items: center; gap: 7px; font-size: .75rem; font-weight: 550; color: var(--state-text, var(--neutral-text)); }
-.status-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--state-fill, var(--neutral)); }
+
 .row-notice { color: var(--notice-foreground); margin: 7px 0 0; font-size: .6875rem; overflow-wrap: anywhere; }
 .source-notices { margin-top: 32px; border-top: 1px solid var(--border); }
 .source-notices summary { min-height: 44px; padding-block: 12px; cursor: pointer; color: var(--muted-foreground); font-size: .8125rem; font-weight: 600; }
@@ -99,9 +96,7 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
 .source-notice small { display: block; margin-top: 8px; }
 .request-notice { display: flex; gap: 20px; justify-content: space-between; align-items: center; }
 .request-notice button { min-height: 40px; padding-inline: 16px; }
-.empty-state { padding: 56px 24px; text-align: center; }
-.empty-state h2 { margin: 4px 0; font-size: 1rem; line-height: 1.4; font-weight: 600; }
-.empty-state p { color: var(--muted-foreground); margin: 8px 0 18px; }
+.empty-state { padding: 24px; }
 .empty-state button { height: 44px; padding-inline: 16px; }
 .skeleton-row { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 30px; padding: 40px 24px; border-top: 1px solid var(--border); }
 .skeleton-row:first-of-type { border-top: 0; }
@@ -113,17 +108,19 @@ h1 { margin: 0; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; f
  .workflow-metrics { grid-column: 1; grid-row: 2; }
  .latest-state { grid-column: 2; grid-row: 2; justify-self: end; }
  .filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+ .filters:has(.filter-actions) { grid-template-columns: repeat(4, minmax(0, 1fr)) max-content; }
  .search-label { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
  main { padding: 24px 16px; }
  .page-header { gap: 12px; align-items: flex-start; margin-bottom: 22px; }
  h1 { font-size: 1.375rem; }
- .refresh-controls { flex-direction: column-reverse; align-items: flex-end; gap: 6px; }
- .refresh-status { font-size: .625rem; max-width: 150px; text-align: right; }
+ .refresh-controls { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+ .refresh-status { order: 1; flex-basis: 100%; font-size: .625rem; text-align: right; }
  .refresh-button { height: 40px; }
- .filters { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
- .filters input, .filters select { font-size: 1rem; }
+ .filters, .filters:has(.filter-actions) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-bottom: 20px; }
+ .filters:has(.filter-actions) .repository-filter { grid-column: 1 / -1; }
+ .filters { --kit-control-font-size: 1rem; }
  .workflow-row { display: flex; flex-wrap: wrap; gap: 14px 8px; padding: 20px 18px; }
  .workflow-identity, .workflow-history { flex: 0 0 100%; }
  .workflow-identity { order: 0; }

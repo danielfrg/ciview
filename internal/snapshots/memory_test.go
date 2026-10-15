@@ -107,3 +107,28 @@ func TestMemoryNormalizesStoredTimestampsToUTC(t *testing.T) {
 		t.Fatalf("timestamp instant changed: %v", got.Runs[0].CreatedAt)
 	}
 }
+
+func TestWorkflowFileCatalogIsIndependentlyOwned(t *testing.T) {
+	store := NewMemory()
+	ctx := context.Background()
+	snapshot := ci.RepositorySnapshot{Repository: ci.Repository{Key: "repo"}, WorkflowFiles: []string{".github/workflows/test.yml"}, WorkflowFilesBranch: "main"}
+	if err := store.Write(ctx, snapshot); err != nil {
+		t.Fatal(err)
+	}
+	snapshot.WorkflowFiles[0] = "changed"
+	read, _, err := store.Read(ctx, "repo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.WorkflowFiles[0] != ".github/workflows/test.yml" {
+		t.Fatal("catalog retained caller memory")
+	}
+	read.WorkflowFiles[0] = "changed"
+	listed, err := store.List(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if listed[0].WorkflowFiles[0] != ".github/workflows/test.yml" || listed[0].WorkflowFilesBranch != "main" {
+		t.Fatal("read catalog shared with stored snapshot")
+	}
+}

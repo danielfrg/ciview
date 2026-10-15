@@ -11,14 +11,15 @@ Read `PRODUCT.md` and `DESIGN.md` before changing the frontend.
 - `internal/snapshots` provides concurrent, independently owned snapshots.
 - `internal/ci` defines contracts and calculates workflow overviews.
 - `internal/httpapi` exposes cached state through Huma; `internal/web` embeds UI.
-- `frontend` uses plain Vite, Svelte 5, TypeScript and Tailwind 4 with pnpm.
+- `frontend` uses plain Vite, Svelte 5, TypeScript and Kit UI with pnpm.
 
 ## Conventions
 
-Use locally owned UI primitives under `frontend/src/lib/components/ui` and CI
-presentation components under `components/ci`. Preserve semantic tokens,
-Svelte runes, typed props, callback props, snippets and barrel exports. No
-SvelteKit or provider transport in the browser. Go owns timing and sample metrics.
+Import shared controls directly from `@kenn-io/kit-ui`. Keep CI presentation
+components under `frontend/src/lib/components/ci`; add local wrappers only for
+app-specific behavior. Preserve semantic tokens, Svelte runes, typed props,
+callback props and snippets. No SvelteKit or provider transport in the browser.
+Go owns timing and sample metrics.
 
 Keep this viewer read-only. Preserve terminal outcomes, unavailable duration,
 partial coverage and stale rows. Never expose tokens or raw provider errors.

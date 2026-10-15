@@ -24,6 +24,7 @@ type Run struct {
 	ID               string     `json:"id"`
 	WorkflowID       string     `json:"workflow_id"`
 	WorkflowName     string     `json:"workflow_name"`
+	WorkflowFile     string     `json:"workflow_file,omitempty"`
 	WorkflowURL      string     `json:"workflow_url,omitempty"`
 	Title            string     `json:"title"`
 	Branch           string     `json:"branch"`
@@ -57,10 +58,12 @@ type Health struct {
 }
 
 type RepositorySnapshot struct {
-	Repository Repository `json:"repository"`
-	Runs       []Run      `json:"runs"`
-	Coverage   Coverage   `json:"coverage"`
-	Health     Health     `json:"health"`
+	WorkflowFiles       []string   `json:"-"`
+	WorkflowFilesBranch string     `json:"-"`
+	Repository          Repository `json:"repository"`
+	Runs                []Run      `json:"runs"`
+	Coverage            Coverage   `json:"coverage"`
+	Health              Health     `json:"health"`
 }
 
 type Issue struct {
@@ -98,6 +101,7 @@ type RunPage struct {
 
 type Provider interface {
 	Discover(context.Context, Selection) (Discovery, error)
+	ListWorkflowFiles(context.Context, Repository, string) ([]string, error)
 	ListRuns(context.Context, Repository, int) (RunPage, error)
 	GetRun(context.Context, Repository, string) (Run, error)
 	EnrichDuration(context.Context, Repository, Run) (Run, error)
@@ -139,6 +143,7 @@ type InventoryReader interface {
 }
 
 type Workflow struct {
+	FileExists              *bool      `json:"file_exists"`
 	Key                     string     `json:"key"`
 	Repository              Repository `json:"repository"`
 	WorkflowID              string     `json:"workflow_id"`

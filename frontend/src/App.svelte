@@ -1,8 +1,6 @@
 <script lang="ts">
  import { onMount } from 'svelte';
- import { Button } from '$lib/components/ui/button';
- import { Input } from '$lib/components/ui/input';
- import { Select } from '$lib/components/ui/select';
+ import { Button, EmptyState, SearchInput, SelectDropdown, ThemeToggle } from '@kenn-io/kit-ui';
  import WorkflowRow from '$lib/components/ci/WorkflowRow.svelte';
  import SourceNotices from '$lib/components/ci/SourceNotices.svelte';
  import { parseOverview, filterWorkflows, groupWorkflows, readFilters, writeFilters, states, statusLabel, type RunState, type Filters, type Overview } from '$lib/ci';
@@ -57,21 +55,36 @@
 <main>
  <header class="page-header">
   <h1>CI View</h1>
-  <div class="refresh-controls"><span class="refresh-status" role="status">{#if loading}{overview ? 'Refreshing…' : 'Loading…'}{:else if error}Overview unavailable{:else if stale}Some data is stale{/if}</span><Button variant="outline" class="refresh-button" disabled={loading} onclick={() => void load()} title="Reload the cached overview">Refresh</Button></div>
+  <div class="refresh-controls"><span class="refresh-status" role="status">{#if loading}{overview ? 'Refreshing…' : 'Loading…'}{:else if error}Overview unavailable{:else if stale}Some data is stale{/if}</span><ThemeToggle/><Button surface="outline" class="refresh-button" disabled={loading} onclick={() => void load()} title="Reload the cached overview">Refresh</Button></div>
  </header>
  <section class="filters" aria-label="Workflow filters">
-  <label class="search-label"><span class="sr-only">Search workflows and repositories</span><Input type="search" placeholder="Search workflows or repositories…" value={filters.search} oninput={(event) => updateFilter('search', event.currentTarget.value, true)} /></label>
-  <label><span class="sr-only">Provider</span><Select value={filters.provider} onchange={(event) => updateFilter('provider', event.currentTarget.value)}><option value="">All providers</option>{#each providers as provider}<option value={provider}>{provider === 'github' ? 'GitHub' : provider === 'forgejo' ? 'Forgejo' : provider}</option>{/each}{#if filters.provider && !providers.includes(filters.provider)}<option value={filters.provider}>{filters.provider} (unavailable)</option>{/if}</Select></label>
-  <label><span class="sr-only">Source</span><Select value={filters.source} onchange={(event) => updateFilter('source', event.currentTarget.value)}><option value="">All sources</option>{#each overview?.sources ?? [] as source}<option value={source.name}>{source.name}</option>{/each}{#if filters.source && !overview?.sources.some(source => source.name === filters.source)}<option value={filters.source}>{filters.source} (unavailable)</option>{/if}</Select></label>
-  <label><span class="sr-only">Repository</span><Select value={filters.repository} onchange={(event) => updateFilter('repository', event.currentTarget.value)}><option value="">All repositories</option>{#each repositories as repo}<option value={repo.key}>{repo.source} / {repo.full_name}</option>{/each}{#if filters.repository && !repositories.some(repo => repo.key === filters.repository)}<option value={filters.repository}>Selected repository (unavailable)</option>{/if}</Select></label>
-  <label><span class="sr-only">Latest status</span><Select value={filters.status} onchange={(event) => updateFilter('status', event.currentTarget.value)}><option value="">All statuses</option>{#each states as state}<option value={state}>{statusLabel(state as RunState)}</option>{/each}</Select></label>
-  {#if activeFilters}<div class="filter-actions"><Button variant="outline" class="clear-filters" onclick={clearFilters}>Clear filters</Button></div>{/if}
+  <div class="search-label"><SearchInput block ariaLabel="Search workflows and repositories" placeholder="Search workflows or repositories…" value={filters.search} oninput={(value) => updateFilter('search', value, true)} /></div>
+  <SelectDropdown title="Provider" value={filters.provider} onchange={(value) => updateFilter('provider', value)} options={[
+   { value: '', label: 'All providers' },
+   ...providers.map(provider => ({ value: provider, label: provider === 'github' ? 'GitHub' : provider === 'forgejo' ? 'Forgejo' : provider })),
+   ...(filters.provider && !providers.includes(filters.provider) ? [{ value: filters.provider, label: `${filters.provider} (unavailable)` }] : []),
+  ]}/>
+  <SelectDropdown title="Source" value={filters.source} onchange={(value) => updateFilter('source', value)} options={[
+   { value: '', label: 'All sources' },
+   ...(overview?.sources ?? []).map(source => ({ value: source.name, label: source.name })),
+   ...(filters.source && !overview?.sources.some(source => source.name === filters.source) ? [{ value: filters.source, label: `${filters.source} (unavailable)` }] : []),
+  ]}/>
+  <SelectDropdown class="repository-filter" title="Repository" value={filters.repository} onchange={(value) => updateFilter('repository', value)} options={[
+   { value: '', label: 'All repositories' },
+   ...repositories.map(repo => ({ value: repo.key, label: `${repo.source} / ${repo.full_name}` })),
+   ...(filters.repository && !repositories.some(repo => repo.key === filters.repository) ? [{ value: filters.repository, label: 'Selected repository (unavailable)' }] : []),
+  ]}/>
+  <SelectDropdown title="Latest status" value={filters.status} onchange={(value) => updateFilter('status', value)} options={[
+   { value: '', label: 'All statuses' },
+   ...states.map(state => ({ value: state, label: statusLabel(state as RunState) })),
+  ]}/>
+  {#if activeFilters}<div class="filter-actions"><Button surface="outline" class="clear-filters" onclick={clearFilters}>Clear filters</Button></div>{/if}
  </section>
  {#if error}<div class="request-notice" role="alert"><div><strong>{overview ? 'Showing the last overview' : 'Unable to load workflows'}</strong><p>{error}</p></div><Button onclick={() => void load()} disabled={loading}>{loading ? 'Retrying…' : 'Retry'}</Button></div>{/if}
  <section class="workflow-overview" aria-label="Workflows" aria-busy={loading && !overview}>
   {#if !overview && loading}<div class="workflow-state loading-state" role="status"><span class="sr-only">Loading workflow overview</span>{#each [1,2,3,4] as row (row)}<div class="skeleton-row" aria-hidden="true"><div></div><div></div><div></div></div>{/each}</div>
-  {:else if overview && !overview.workflows.length}<div class="workflow-state empty-state"><h2>{pendingSources ? 'Loading repositories' : unavailableSources ? 'Workflow data unavailable' : 'No observed workflows'}</h2><p>{pendingSources ? 'The server is collecting the first run sample.' : unavailableSources ? 'Check the source notices below for unavailable selections or connection errors.' : 'No workflow runs were found in the configured repositories and branch scope.'}</p></div>
-  {:else if overview && !visible.length}<div class="workflow-state empty-state"><h2>No matching workflows</h2><p>Try another search or clear your filters.</p><Button variant="outline" onclick={clearFilters}>Clear filters</Button></div>
+  {:else if overview && !overview.workflows.length}<div class="workflow-state empty-state"><EmptyState title={pendingSources ? 'Loading repositories' : unavailableSources ? 'Workflow data unavailable' : 'No observed workflows'} description={pendingSources ? 'The server is collecting the first run sample.' : unavailableSources ? 'Check the source notices below for unavailable selections or connection errors.' : 'No workflow runs were found in the configured repositories and branch scope.'}/></div>
+  {:else if overview && !visible.length}<div class="workflow-state empty-state"><EmptyState title="No matching workflows" description="Try another search or clear your filters."><Button surface="outline" onclick={clearFilters}>Clear filters</Button></EmptyState></div>
   {:else if overview}
    <div class="source-groups">
     {#each groups as source (source.name)}
@@ -89,7 +102,7 @@
      </section>
     {/each}
    </div>
-  {:else}<div class="workflow-state empty-state"><p>Your workflow overview will appear when the connection recovers.</p></div>{/if}
+  {:else}<div class="workflow-state empty-state"><EmptyState title="Waiting for connection" description="Your workflow overview will appear when the connection recovers."/></div>{/if}
  </section>
  {#if overview}<SourceNotices sources={overview.sources}/>{/if}
 </main>

@@ -32,6 +32,10 @@ func (c *Client) Discover(ctx context.Context, s ci.Selection) (ci.Discovery, er
 	return c.transport.Discover(ctx, s, 50)
 }
 
+func (c *Client) ListWorkflowFiles(ctx context.Context, r ci.Repository, branch string) ([]string, error) {
+	return c.transport.ListWorkflowFiles(ctx, r, branch)
+}
+
 type runResponse struct {
 	ID         json.Number `json:"id"`
 	WorkflowID string      `json:"workflow_id"`
@@ -53,7 +57,7 @@ func normalize(repo ci.Repository, v runResponse) (ci.Run, error) {
 	if v.WorkflowID == "" {
 		return ci.Run{}, rest.Error("invalid_data", "Provider workflow identity was unavailable")
 	}
-	r := ci.Run{ID: v.ID.String(), WorkflowID: v.WorkflowID, WorkflowName: v.WorkflowID, Title: v.Title, Branch: strings.TrimPrefix(v.PrettyRef, "refs/heads/"), Event: v.Event, URL: rest.SafeURL(v.HTMLURL), WorkflowURL: rest.WorkflowURL(repo.URL, "forgejo", v.WorkflowID), Attempt: 1, RawStatus: v.Status, StartedAt: rest.Timestamp(v.Started)}
+	r := ci.Run{ID: v.ID.String(), WorkflowID: v.WorkflowID, WorkflowName: v.WorkflowID, WorkflowFile: v.WorkflowID, Title: v.Title, Branch: strings.TrimPrefix(v.PrettyRef, "refs/heads/"), Event: v.Event, URL: rest.SafeURL(v.HTMLURL), WorkflowURL: rest.WorkflowURL(repo.URL, "forgejo", v.WorkflowID), Attempt: 1, RawStatus: v.Status, StartedAt: rest.Timestamp(v.Started)}
 	if created := rest.Timestamp(v.Created); created != nil {
 		r.CreatedAt = *created
 	}

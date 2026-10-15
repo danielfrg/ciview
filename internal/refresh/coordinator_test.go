@@ -16,6 +16,9 @@ import (
 )
 
 type controlledProvider struct {
+	workflowFiles            []string
+	workflowErr              error
+	workflowBranches         []string
 	mu                       sync.Mutex
 	discovery                ci.Discovery
 	discoveryErr             error
@@ -37,6 +40,15 @@ func (p *controlledProvider) Discover(ctx context.Context, s ci.Selection) (ci.D
 		return p.discoverFn(ctx, s)
 	}
 	return p.discovery, p.discoveryErr
+}
+func (p *controlledProvider) ListWorkflowFiles(_ context.Context, _ ci.Repository, branch string) ([]string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.workflowBranches = append(p.workflowBranches, branch)
+	if p.workflowFiles == nil {
+		return []string{""}, p.workflowErr
+	} // Existing synthetic runs omit paths.
+	return p.workflowFiles, p.workflowErr
 }
 func (p *controlledProvider) ListRuns(ctx context.Context, r ci.Repository, n int) (ci.RunPage, error) {
 	p.mu.Lock()
@@ -627,4 +639,237 @@ func TestRefreshPublishesRepositoriesFromConfiguredUserSelection(t *testing.T) {
 	if snapshot.Repository.FullName != "example-user/project" || len(snapshot.Runs) != 1 || snapshot.Runs[0].ID != "1" {
 		t.Fatalf("configured user repository runs missing: %#v", snapshot)
 	}
+}
+
+func TestRefreshExcludesWorkflowsRemovedFromSelectedBranch(t *testing.T) {
+	for _, scope := range []string{"default", "release/next"} {
+		t.Run(scope, func(t *testing.T) {
+			p := provider()
+			var runs []ci.Run
+			if err := json.Unmarshal([]byte(`[ {"id":"current","workflow_id":"ci","workflow_file":".github/workflows/ci.yml","branch":"main","terminal":true}, {"id":"removed","workflow_id":"old","workflow_file":".github/workflows/old.yml","branch":"main","terminal":false} ]`), &runs); err != nil {
+				t.Fatal(err)
+			}
+			branch := "main"
+			if scope != "default" {
+				branch = scope
+			}
+			for i := range runs {
+				runs[i].Branch = branch
+			}
+			p.pages[1] = ci.RunPage{Runs: runs}
+			p.workflowFiles = []string{".github/workflows/ci.yml", ".github/workflows/old.yml"}
+			cfg := testConfig()
+			cfg.Sources[0].ExistingWorkflowsOnly = true
+			cfg.Viewer.Branch = scope
+			m := snapshots.NewMemory()
+			c := New(cfg, map[string]ci.Provider{"public": p}, m)
+			if err := c.Refresh(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			if len(read(t, m).Runs) != 2 {
+				t.Fatal("initial workflows missing")
+			}
+			p.workflowFiles = []string{".github/workflows/ci.yml"}
+			if err := c.Refresh(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			snap := read(t, m)
+			if len(snap.Runs) != 1 || snap.Runs[0].ID != "current" {
+				t.Fatalf("removed workflow still retained: %+v", snap.Runs)
+			}
+			if p.gets != 0 {
+				t.Fatal("requested deleted workflow's unfinished run")
+			}
+			if len(p.workflowBranches) != 2 || p.workflowBranches[1] != branch {
+				t.Fatalf("wrong workflow branch: %v", p.workflowBranches)
+			}
+			p.workflowErr = &ci.ProviderError{Kind: "permission", Message: "Access denied"}
+			if err := c.Refresh(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			snap = read(t, m)
+			if len(snap.Runs) != 1 || snap.Health.State != "stale" {
+				t.Fatalf("catalog failure erased rows: %+v", snap)
+			}
+			p.workflowErr = nil
+			p.workflowFiles = []string{}
+			if err := c.Refresh(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			if len(read(t, m).Runs) != 0 {
+				t.Fatal("empty workflow directory retained removed runs")
+			}
+		})
+	}
+}
+
+func TestSourcesKeepHistoricalWorkflowsWhenFileStatusIsUnavailable(t *testing.T) {
+	p := provider()
+	p.workflowFiles = []string{}
+	p.workflowErr = &ci.ProviderError{Kind: "permission", Message: "Contents unavailable"}
+	c, m := setup(p)
+	if err := c.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	snap := read(t, m)
+	if len(snap.Runs) != 1 || snap.Health.State != "partial" || snap.WorkflowFilesBranch != "" {
+		t.Fatalf("file-status failure hid historical runs or claimed verified contents: %+v", snap)
+	}
+	if len(p.workflowBranches) != 1 {
+		t.Fatal("default source did not check workflow file status")
+	}
+}
+
+func TestExistingWorkflowFilterDoesNotAffectOtherSources(t *testing.T) {
+	cfg := testConfig()
+	cfg.Sources[0].ExistingWorkflowsOnly = true
+	cfg.Sources = append(cfg.Sources, config.Source{Name: "history", Provider: "github", Repos: []string{"example/project"}})
+	filtered, history := provider(), provider()
+	filtered.workflowFiles = []string{}
+	history.workflowFiles = []string{}
+	historicalRepo := repo()
+	historicalRepo.Key = "history-repo"
+	historicalRepo.Source = "history"
+	history.discovery.Repositories = []ci.Repository{historicalRepo}
+	store := snapshots.NewMemory()
+	c := New(cfg, map[string]ci.Provider{"public": filtered, "history": history}, store)
+	if err := c.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(read(t, store).Runs) != 0 {
+		t.Fatal("opted-in source retained removed workflow")
+	}
+	snap, found, err := store.Read(context.Background(), historicalRepo.Key)
+	if err != nil || !found || len(snap.Runs) != 1 || snap.Health.State != "healthy" {
+		t.Fatalf("filtered another source's history: %+v, err=%v", snap, err)
+	}
+	if len(filtered.workflowBranches) != 1 || len(history.workflowBranches) != 1 {
+		t.Fatal("workflow catalog requested for the wrong source")
+	}
+}
+
+func TestGeneratedDependabotWorkflowsAreHiddenByDefault(t *testing.T) {
+	p := provider()
+	regular := run("ci", 1, true)
+	regular.WorkflowFile = ".github/workflows/ci.yml"
+	updates := run("updates", 2, true)
+	updates.WorkflowID = "updates"
+	updates.WorkflowFile = "dynamic/dependabot/dependabot-updates"
+	graph := run("graph", 3, true)
+	graph.WorkflowID = "graph"
+	graph.WorkflowFile = "dynamic/dependabot/update-graph"
+	named := run("named", 4, true)
+	named.WorkflowID = "named"
+	named.WorkflowName = "Dependabot updates CI"
+	named.WorkflowFile = ".github/workflows/dependabot.yml"
+	p.pages[1] = ci.RunPage{Runs: []ci.Run{regular, updates, graph, named}}
+	c, m := setup(p)
+	cached := run("cached", 0, false)
+	cached.WorkflowID = "cached"
+	cached.WorkflowFile = "dynamic/dependabot/dependabot-updates"
+	if err := m.Write(context.Background(), ci.RepositorySnapshot{Repository: repo(), Runs: []ci.Run{cached}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	snap := read(t, m)
+	if len(snap.Runs) != 2 || snap.Runs[0].ID != "named" || snap.Runs[1].ID != "ci" {
+		t.Fatalf("generated workflows remain or regular CI was hidden: %+v", snap.Runs)
+	}
+	if p.gets != 0 {
+		t.Fatal("requested hidden unfinished Dependabot run")
+	}
+}
+
+func TestDependabotVisibilityIsIndependentForEachSource(t *testing.T) {
+	cfg := testConfig()
+	cfg.Viewer.Branch = "all"
+	cfg.Sources = append(cfg.Sources, config.Source{Name: "show", Provider: "github", Repos: []string{"example/project"}, ShowDependabotUpdates: true})
+	hide, show := provider(), provider()
+	generated := run("updates", 1, true)
+	generated.WorkflowFile = "dynamic/dependabot/dependabot-updates"
+	pr := run("pr-ci", 2, true)
+	pr.WorkflowFile = ".github/workflows/ci.yml"
+	pr.WorkflowID = "ci"
+	pr.WorkflowName = "CI"
+	pr.Branch = "dependabot/uv/package-1.0"
+	pr.Event = "pull_request"
+	hide.pages[1] = ci.RunPage{Runs: []ci.Run{generated, pr}}
+	show.pages[1] = ci.RunPage{Runs: []ci.Run{generated, pr}}
+	showRepo := repo()
+	showRepo.Key = "show-repo"
+	showRepo.Source = "show"
+	show.discovery.Repositories = []ci.Repository{showRepo}
+	store := snapshots.NewMemory()
+	c := New(cfg, map[string]ci.Provider{"public": hide, "show": show}, store)
+	if err := c.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	hidden := read(t, store)
+	if len(hidden.Runs) != 1 || hidden.Runs[0].ID != "pr-ci" {
+		t.Fatalf("default source did not preserve normal Dependabot PR CI: %+v", hidden.Runs)
+	}
+	visible, found, err := store.Read(context.Background(), showRepo.Key)
+	if err != nil || !found || len(visible.Runs) != 2 {
+		t.Fatalf("source opt-in did not show generated workflows: %+v err=%v", visible, err)
+	}
+}
+
+func TestOverviewMarksWorkflowFilesAbsentFromSelectedBranch(t *testing.T) {
+	p := provider()
+	current := run("current", 1, true)
+	current.WorkflowID = "current"
+	current.WorkflowFile = ".github/workflows/test.yml"
+	removed := run("removed", 2, true)
+	removed.WorkflowID = "removed"
+	removed.WorkflowFile = ".github/workflows/check.yml"
+	p.pages[1] = ci.RunPage{Runs: []ci.Run{current, removed}}
+	p.workflowFiles = []string{current.WorkflowFile}
+	c, m := setup(p)
+	ctx := context.Background()
+	if err := c.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	check := func(wantKnown bool) {
+		t.Helper()
+		overview, err := ci.NewOverview(m, c, 30, "default", time.Minute).Overview(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(overview.Workflows) != 2 {
+			t.Fatalf("historical rows hidden: %+v", overview.Workflows)
+		}
+		body, err := json.Marshal(overview)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wire struct {
+			Workflows []struct {
+				WorkflowID string `json:"workflow_id"`
+				FileExists *bool  `json:"file_exists"`
+			}
+		}
+		if err := json.Unmarshal(body, &wire); err != nil {
+			t.Fatal(err)
+		}
+		for _, row := range wire.Workflows {
+			if !wantKnown {
+				if row.FileExists != nil {
+					t.Fatalf("failed branch check reported file status: %+v", row)
+				}
+				continue
+			}
+			want := row.WorkflowID == "current"
+			if row.FileExists == nil || *row.FileExists != want {
+				t.Fatalf("workflow %s: file_exists=%v want %v", row.WorkflowID, row.FileExists, want)
+			}
+		}
+	}
+	check(true)
+	p.workflowErr = &ci.ProviderError{Kind: "permission", Message: "Access denied"}
+	if err := c.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	check(false)
 }
