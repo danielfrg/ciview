@@ -1,7 +1,7 @@
 # Public GitHub access works without credentials. Copy to civiewer.toml to run.
 [viewer]
-refresh_interval = "60s"
-discovery_interval = "15m"
+refresh_interval = "10m"
+discovery_interval = "10m"
 history_runs = 30
 history_pages = 5
 branch = "default"
