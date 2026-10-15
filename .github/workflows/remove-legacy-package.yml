@@ -63,7 +63,11 @@ jobs:
                       payload = response.read()
                       return json.loads(payload) if payload else {}
               except urllib.error.HTTPError as error:
-                  raise RuntimeError(f"GitHub API {method} {path} returned HTTP {error.code}") from None
+                  try:
+                      detail = json.loads(error.read()).get("message", "")
+                  except (ValueError, AttributeError):
+                      detail = "Unrecognized API error response"
+                  raise RuntimeError(f"GitHub API {method} {path} returned HTTP {error.code}: {detail}") from None
 
           def packages():
               visible = []
