@@ -38,6 +38,10 @@ func (c *Client) Discover(ctx context.Context, s ci.Selection) (ci.Discovery, er
 	return c.transport.Discover(ctx, s, 100)
 }
 
+func (c *Client) ListWorkflowFiles(ctx context.Context, r ci.Repository, branch string) ([]string, error) {
+	return c.transport.ListWorkflowFiles(ctx, r, branch)
+}
+
 type runResponse struct {
 	ID             json.Number `json:"id"`
 	WorkflowID     json.Number `json:"workflow_id"`
@@ -85,7 +89,7 @@ func normalize(repo ci.Repository, v runResponse) (ci.Run, error) {
 			headRepositoryID = v.HeadRepository.ID.String()
 		}
 	}
-	r := ci.Run{ID: v.ID.String(), WorkflowID: workflow, WorkflowName: name, Title: v.DisplayTitle, Branch: v.HeadBranch, HeadRepositoryID: headRepositoryID, Event: v.Event, URL: rest.SafeURL(v.HTMLURL), WorkflowURL: rest.WorkflowURL(repo.URL, "github", v.Path), Attempt: attempt, RawStatus: v.Status, RawConclusion: v.Conclusion, StartedAt: rest.Timestamp(v.StartedAt)}
+	r := ci.Run{ID: v.ID.String(), WorkflowID: workflow, WorkflowName: name, WorkflowFile: v.Path, Title: v.DisplayTitle, Branch: v.HeadBranch, HeadRepositoryID: headRepositoryID, Event: v.Event, URL: rest.SafeURL(v.HTMLURL), WorkflowURL: rest.WorkflowURL(repo.URL, "github", v.Path), Attempt: attempt, RawStatus: v.Status, RawConclusion: v.Conclusion, StartedAt: rest.Timestamp(v.StartedAt)}
 	if created := rest.Timestamp(v.CreatedAt); created != nil {
 		r.CreatedAt = *created
 	}

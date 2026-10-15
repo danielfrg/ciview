@@ -270,8 +270,46 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 		return errors.New("snapshot store read failed")
 	}
 	now := c.now().UTC()
+	// Read current workflow files to annotate historical rows. Only opted-in
+	// sources exclude missing files. All-branch views have no single ref to check.
+	var workflowFiles map[string]bool
+	var catalogFiles []string
+	var catalogBranch string
+	var catalogError error
+	if c.cfg.Viewer.Branch != "all" {
+		branch := c.cfg.Viewer.Branch
+		if branch == "default" {
+			branch = r.DefaultBranch
+		}
+		if err := c.cooldownError(s); err != nil {
+			return c.fail(ctx, s, r, prior, found, now, err)
+		}
+		files, err := s.provider.ListWorkflowFiles(call, r, branch)
+		if err != nil {
+			if s.config.ExistingWorkflowsOnly {
+				return c.fail(ctx, s, r, prior, found, now, err)
+			}
+			catalogError = err
+			c.deferSource(s, err)
+		} else {
+			catalogFiles, catalogBranch = files, branch
+			workflowFiles = make(map[string]bool, len(files))
+			for _, file := range files {
+				workflowFiles[file] = true
+			}
+		}
+	}
+	visibleWorkflow := func(run ci.Run) bool {
+		if r.Provider == "github" && !s.config.ShowDependabotUpdates && strings.HasPrefix(run.WorkflowFile, "dynamic/dependabot/") {
+			return false
+		}
+		return !s.config.ExistingWorkflowsOnly || workflowFiles == nil || workflowFiles[run.WorkflowFile]
+	}
 	old := map[string]ci.Run{}
 	for _, v := range prior.Runs {
+		if !visibleWorkflow(v) {
+			continue
+		}
 		old[v.ID] = v
 	}
 	collected := map[string]ci.Run{}
@@ -293,6 +331,9 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 			if coverage.OldestFetchedAt == nil || v.CreatedAt.Before(*coverage.OldestFetchedAt) {
 				t := v.CreatedAt.UTC()
 				coverage.OldestFetchedAt = &t
+			}
+			if !visibleWorkflow(v) {
+				continue
 			}
 			if _, ok := old[v.ID]; ok {
 				bridge = true
@@ -353,6 +394,12 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 	}
 	health := ci.Health{State: "healthy", LastAttemptAt: now, LastSuccessAt: &now}
 	issues := []ci.Issue{}
+	if catalogError != nil {
+		kind, message := safeError(catalogError)
+		health.State = "partial"
+		health.Message = "Workflow file status unavailable"
+		issues = append(issues, ci.Issue{Repository: r.FullName, Kind: kind, Message: "Workflow file status unavailable: " + message})
+	}
 	enriched := map[string]bool{}
 	for i, v := range retained {
 		if !v.Terminal || enriched[v.WorkflowID] {
@@ -393,7 +440,7 @@ func (c *Coordinator) scan(ctx context.Context, s *source, r ci.Repository, reco
 		health.RetryAt = &t
 	}
 	c.mu.RUnlock()
-	snap := ci.RepositorySnapshot{Repository: r, Runs: retained, Coverage: coverage, Health: health}
+	snap := ci.RepositorySnapshot{Repository: r, Runs: retained, Coverage: coverage, Health: health, WorkflowFiles: catalogFiles, WorkflowFilesBranch: catalogBranch}
 	if err := c.store.Write(ctx, snap); err != nil {
 		return errors.New("snapshot store write failed")
 	}
