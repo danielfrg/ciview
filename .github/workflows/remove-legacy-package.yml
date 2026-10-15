@@ -45,7 +45,7 @@ jobs:
               if not condition:
                   raise RuntimeError(message)
 
-          def api(method, path, allow_missing=False):
+          def api(method, path):
               request = urllib.request.Request(
                   "https://api.github.com" + path,
                   method=method,
@@ -58,12 +58,28 @@ jobs:
               )
               try:
                   with urllib.request.urlopen(request, timeout=30) as response:
+                      if method == "DELETE":
+                          require(response.status == 204, "Package deletion did not return HTTP 204")
                       payload = response.read()
                       return json.loads(payload) if payload else {}
               except urllib.error.HTTPError as error:
-                  if error.code == 404 and allow_missing:
-                      return None
                   raise RuntimeError(f"GitHub API {method} {path} returned HTTP {error.code}") from None
+
+          def packages():
+              visible = []
+              for page in range(1, 11):
+                  batch = api("GET", f"/users/danielfrg/packages?package_type=container&per_page=100&page={page}")
+                  require(isinstance(batch, list), "Unexpected packages response")
+                  require(all(isinstance(package, dict) for package in batch), "Invalid package metadata")
+                  visible.extend(batch)
+                  if len(batch) < 100:
+                      return visible
+              raise RuntimeError("Unexpectedly many accessible packages")
+
+          def legacy_package(visible):
+              matches = [package for package in visible if package.get("name") == "civiewer"]
+              require(len(matches) <= 1, "Duplicate legacy package metadata")
+              return matches[0] if matches else None
 
           def timestamp(value):
               require(isinstance(value, str), "Missing version timestamp")
@@ -73,9 +89,13 @@ jobs:
           require(os.environ.get("GITHUB_REF") == "refs/heads/main", "Cleanup requires main")
           require(os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch", "Manual dispatch required")
 
-          package = api("GET", PACKAGE_PATH, allow_missing=True)
+          visible = packages()
+          package = legacy_package(visible)
           if package is None:
-              print("Legacy ghcr.io/danielfrg/civiewer package is already absent.")
+              current = [package for package in visible if package.get("name") == "ciview"]
+              require(len(current) == 1 and current[0].get("repository", {}).get("id") == REPOSITORY_ID,
+                      "Legacy package is not visible and current package access is unverified; inspect permissions")
+              print("Accessible-package listing confirms legacy civiewer is absent; current ciview remains accessible.")
               raise SystemExit(0)
           require(package.get("name") == "civiewer", "Unexpected package name")
           require(package.get("package_type") == "container", "Unexpected package type")
@@ -131,8 +151,8 @@ jobs:
           print(f"Verified legacy package with {len(versions)} versions from original run {ORIGINAL_RUN_ID}.")
           api("DELETE", PACKAGE_PATH)
           for attempt in range(3):
-              if api("GET", PACKAGE_PATH, allow_missing=True) is None:
-                  print("Deleted ghcr.io/danielfrg/civiewer and verified that it is absent.")
+              if legacy_package(packages()) is None:
+                  print("Deleted ghcr.io/danielfrg/civiewer with HTTP 204 and verified its absence from accessible packages.")
                   break
               time.sleep(2)
           else:
