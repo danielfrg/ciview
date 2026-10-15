@@ -45,7 +45,7 @@ jobs:
               if not condition:
                   raise RuntimeError(message)
 
-          def api(method, path):
+          def api(method, path, allow_missing=False):
               request = urllib.request.Request(
                   "https://api.github.com" + path,
                   method=method,
@@ -63,27 +63,32 @@ jobs:
                       payload = response.read()
                       return json.loads(payload) if payload else {}
               except urllib.error.HTTPError as error:
+                  if allow_missing and error.code == 404:
+                      return None
+                  message = ""
                   try:
-                      detail = json.loads(error.read()).get("message", "")
-                  except (ValueError, AttributeError):
-                      detail = "Unrecognized API error response"
-                  raise RuntimeError(f"GitHub API {method} {path} returned HTTP {error.code}: {detail}") from None
+                      payload = json.loads(error.read(4096))
+                      if isinstance(payload, dict) and isinstance(payload.get("message"), str):
+                          message = payload["message"].replace(token, "[redacted]")[:512]
+                  except (ValueError, UnicodeDecodeError):
+                      pass
+                  if error.code == 404:
+                      message += " Package existence or token access is unverified; inspect package permissions."
+                  raise RuntimeError(f"GitHub API {method} {path} returned HTTP {error.code}: {message}") from None
 
-          def packages():
-              visible = []
+          def package_versions(allow_missing=False):
+              found = []
               for page in range(1, 11):
-                  batch = api("GET", f"/users/danielfrg/packages?package_type=container&per_page=100&page={page}")
-                  require(isinstance(batch, list), "Unexpected packages response")
-                  require(all(isinstance(package, dict) for package in batch), "Invalid package metadata")
-                  visible.extend(batch)
+                  batch = api("GET", f"{PACKAGE_PATH}/versions?state=active&per_page=100&page={page}",
+                              allow_missing=allow_missing and page == 1)
+                  if batch is None:
+                      return []
+                  require(isinstance(batch, list), "Unexpected package versions response")
+                  require(all(isinstance(version, dict) for version in batch), "Invalid version metadata")
+                  found.extend(batch)
                   if len(batch) < 100:
-                      return visible
-              raise RuntimeError("Unexpectedly many accessible packages")
-
-          def legacy_package(visible):
-              matches = [package for package in visible if package.get("name") == "civiewer"]
-              require(len(matches) <= 1, "Duplicate legacy package metadata")
-              return matches[0] if matches else None
+                      return found
+              raise RuntimeError("Unexpectedly many legacy package versions")
 
           def timestamp(value):
               require(isinstance(value, str), "Missing version timestamp")
@@ -93,18 +98,8 @@ jobs:
           require(os.environ.get("GITHUB_REF") == "refs/heads/main", "Cleanup requires main")
           require(os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch", "Manual dispatch required")
 
-          visible = packages()
-          package = legacy_package(visible)
-          if package is None:
-              current = [package for package in visible if package.get("name") == "ciview"]
-              require(len(current) == 1 and current[0].get("repository", {}).get("id") == REPOSITORY_ID,
-                      "Legacy package is not visible and current package access is unverified; inspect permissions")
-              print("Accessible-package listing confirms legacy civiewer is absent; current ciview remains accessible.")
-              raise SystemExit(0)
-          require(package.get("name") == "civiewer", "Unexpected package name")
-          require(package.get("package_type") == "container", "Unexpected package type")
-          require(package.get("owner", {}).get("login", "").lower() == "danielfrg", "Unexpected package owner")
-          require(package.get("repository", {}).get("id") == REPOSITORY_ID, "Unexpected package repository")
+          versions = package_versions()
+          require(versions, "No active versions found; package existence or token access is unverified")
 
           run = api("GET", f"/repos/{REPOSITORY}/actions/runs/{ORIGINAL_RUN_ID}")
           require(run.get("id") == ORIGINAL_RUN_ID, "Unexpected publisher run")
@@ -116,18 +111,6 @@ jobs:
           require(run.get("updated_at") == ORIGINAL_UPDATED_AT, "Publisher finish changed")
           started = timestamp(run["created_at"])
           finished = timestamp(run["updated_at"])
-
-          versions = []
-          for page in range(1, 11):
-              batch = api("GET", f"{PACKAGE_PATH}/versions?per_page=100&page={page}")
-              require(isinstance(batch, list), "Unexpected package versions response")
-              versions.extend(batch)
-              if len(batch) < 100:
-                  break
-          else:
-              raise RuntimeError("Unexpectedly many legacy package versions")
-          require(versions, "No versions found; inspect package manually")
-          require(package.get("version_count") == len(versions), "Package version count changed")
 
           seen_ids = set()
           expected_versions = 0
@@ -155,8 +138,8 @@ jobs:
           print(f"Verified legacy package with {len(versions)} versions from original run {ORIGINAL_RUN_ID}.")
           api("DELETE", PACKAGE_PATH)
           for attempt in range(3):
-              if legacy_package(packages()) is None:
-                  print("Deleted ghcr.io/danielfrg/civiewer with HTTP 204 and verified its absence from accessible packages.")
+              if not package_versions(allow_missing=True):
+                  print("Deleted ghcr.io/danielfrg/civiewer with HTTP 204 and verified that no active versions remain.")
                   break
               time.sleep(2)
           else:
