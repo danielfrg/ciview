@@ -1,7 +1,7 @@
 set dotenv-load := true
 
 api:
-    go run ./cmd/civiewer
+    go run ./cmd/ciview
 
 frontend:
     pnpm --dir frontend dev
@@ -26,4 +26,4 @@ build:
     test -s internal/web/dist/index.html
     go test ./...
     go vet ./...
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o civiewer ./cmd/civiewer
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ciview ./cmd/ciview

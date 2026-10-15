@@ -1,4 +1,4 @@
-# Public GitHub access works without credentials. Copy to civiewer.toml to run.
+# Public GitHub access works without credentials. Copy to ciview.toml to run.
 [viewer]
 refresh_interval = "10m"
 discovery_interval = "10m"
@@ -12,7 +12,7 @@ provider = "github"
 repos = ["actions/checkout"]
 
 # For private repositories or a higher GitHub API allowance, add one credential:
-# token_env = "CIVIEWER_GITHUB_TOKEN"
+# token_env = "CIVIEW_GITHUB_TOKEN"
 # token_file = "/run/secrets/github-token"
 # orgs = ["example-org"]
 # users = ["example-user"]
@@ -23,7 +23,7 @@ repos = ["actions/checkout"]
 # name = "forgejo"
 # provider = "forgejo"
 # base_url = "https://forgejo.example.net"
-# token_env = "CIVIEWER_FORGEJO_TOKEN"
+# token_env = "CIVIEW_FORGEJO_TOKEN"
 # orgs = ["example-org"]
 # users = ["example-user"]
 # repos = ["example-owner/example-repository"]

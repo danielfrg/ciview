@@ -1,8 +1,8 @@
 .git
 .env
 .env.*
-civiewer.toml
-civiewer
+ciview.toml
+ciview
 .superpowers
 .impeccable
 docs/superpowers

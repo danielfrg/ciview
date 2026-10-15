@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"civiewer/internal/ci"
-	"civiewer/internal/snapshots"
+	"ciview/internal/ci"
+	"ciview/internal/snapshots"
 )
 
 type fixtureInventory struct{ state ci.Inventory }

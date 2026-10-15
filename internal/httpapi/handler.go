@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"civiewer/internal/ci"
-	"civiewer/internal/web"
+	"ciview/internal/ci"
+	"ciview/internal/web"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 )
@@ -22,7 +22,7 @@ type healthResponse struct {
 
 func NewHandler(assets fs.FS, reader ci.OverviewReader) http.Handler {
 	mux := http.NewServeMux()
-	cfg := huma.DefaultConfig("CI viewer API", "0.1.0")
+	cfg := huma.DefaultConfig("CI View API", "0.1.0")
 	cfg.OpenAPIPath = "/api/openapi"
 	cfg.DocsPath = "/api/docs"
 	cfg.SchemasPath = "/api/schemas"

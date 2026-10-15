@@ -2,7 +2,7 @@
 package rest
 
 import (
-	"civiewer/internal/ci"
+	"ciview/internal/ci"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"

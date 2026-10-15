@@ -98,12 +98,12 @@ func TestValidateRejectsInvalidBranchComponents(t *testing.T) {
 }
 
 func TestResolveTokenFailsClosedWithoutDisclosure(t *testing.T) {
-	t.Setenv("CIVIEWER_TEST_TOKEN", "private-token-value")
-	token, err := ResolveToken(Source{TokenEnv: "CIVIEWER_TEST_TOKEN"})
+	t.Setenv("CIVIEW_TEST_TOKEN", "private-token-value")
+	token, err := ResolveToken(Source{TokenEnv: "CIVIEW_TEST_TOKEN"})
 	if err != nil || token != "private-token-value" {
 		t.Fatalf("environment token: %q, %v", token, err)
 	}
-	if _, err = ResolveToken(Source{TokenEnv: "CIVIEWER_TEST_MISSING"}); err == nil {
+	if _, err = ResolveToken(Source{TokenEnv: "CIVIEW_TEST_MISSING"}); err == nil {
 		t.Fatal("missing environment token accepted")
 	}
 	path := filepath.Join(t.TempDir(), "token")

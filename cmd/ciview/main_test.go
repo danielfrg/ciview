@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"civiewer/internal/config"
+	"ciview/internal/config"
 )
 
 func writeConfig(t *testing.T, token string) string {
@@ -23,8 +23,8 @@ func writeConfig(t *testing.T, token string) string {
 	return path
 }
 func TestConfiguredCredentialsFailStartupSafely(t *testing.T) {
-	t.Setenv("CIVIEWER_TEST_MISSING_TOKEN", "")
-	err := run(context.Background(), writeConfig(t, "token_env='CIVIEWER_TEST_MISSING_TOKEN'\n"), "127.0.0.1:0")
+	t.Setenv("CIVIEW_TEST_MISSING_TOKEN", "")
+	err := run(context.Background(), writeConfig(t, "token_env='CIVIEW_TEST_MISSING_TOKEN'\n"), "127.0.0.1:0")
 	if err == nil || !strings.Contains(err.Error(), "missing or empty") {
 		t.Fatalf("missing token should fail startup: %v", err)
 	}
@@ -35,9 +35,9 @@ func TestConfiguredCredentialsFailStartupSafely(t *testing.T) {
 	}
 }
 func TestCanceledStartupAndEnvironmentDefaults(t *testing.T) {
-	t.Setenv("CIVIEWER_CONFIG", "")
-	t.Setenv("CIVIEWER_ADDR", "")
-	if envDefault("CIVIEWER_CONFIG", "civiewer.toml") != "civiewer.toml" || envDefault("CIVIEWER_ADDR", "127.0.0.1:8080") != "127.0.0.1:8080" {
+	t.Setenv("CIVIEW_CONFIG", "")
+	t.Setenv("CIVIEW_ADDR", "")
+	if envDefault("CIVIEW_CONFIG", "ciview.toml") != "ciview.toml" || envDefault("CIVIEW_ADDR", "127.0.0.1:8080") != "127.0.0.1:8080" {
 		t.Fatal("startup defaults differ")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -54,7 +54,7 @@ func TestCanceledStartupAndEnvironmentDefaults(t *testing.T) {
 	}
 }
 func TestExampleIsRunnableWithoutCredentials(t *testing.T) {
-	cfg, err := config.Load("../../civiewer.example.toml")
+	cfg, err := config.Load("../../ciview.example.toml")
 	if err != nil {
 		t.Fatal(err)
 	}

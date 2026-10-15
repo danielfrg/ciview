@@ -32,14 +32,14 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: false
           outputs: type=cacheonly
-          cache-from: type=gha,scope=civiewer
-          cache-to: type=gha,scope=civiewer,mode=max
+          cache-from: type=gha,scope=ciview
+          cache-to: type=gha,scope=ciview,mode=max
 
   publish:
     name: Publish image
     needs: build
     if: >-
-      github.repository == 'danielfrg/civiewer' &&
+      github.repository == 'danielfrg/ciview' &&
       github.ref == 'refs/heads/main' &&
       github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
@@ -77,5 +77,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=civiewer
-          cache-to: type=gha,scope=civiewer,mode=max
+          cache-from: type=gha,scope=ciview
+          cache-to: type=gha,scope=ciview,mode=max
