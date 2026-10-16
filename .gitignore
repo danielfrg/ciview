@@ -2,19 +2,38 @@
 .env
 .env.*
 !.env.example
-ciview.toml
+*.pem
+*.key
+*.p12
 
-# Local planning and agent work
-docs/superpowers/
-.superpowers/
+# Dependencies and generated assets
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+/internal/web/dist/*
+!/internal/web/dist/.keep
+.pnpm-store/
+
+# Local agent work and design tooling
 .impeccable/
+.superpowers/
+.worktrees/
+/docs/superpowers/
+/docs/plans/
+/docs/specs/
+/docs/*report*.md
+/docs/local-execution.md
 
-# Build outputs
-/ciview
-frontend/node_modules/
-frontend/dist/
-internal/web/dist/*
-!internal/web/dist/.keep
-frontend/test-results/
-frontend/playwright-report/
+# Test and OS artifacts
+/frontend/test-results/
+/frontend/playwright-report/
+*.test
+*.out
+*.coverprofile
+coverage.*
+!coverage.go
 .DS_Store
+
+# Application files
+/ciview
+/ciview.toml

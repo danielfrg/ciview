@@ -24,6 +24,10 @@ FROM gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55
 WORKDIR /app
 COPY --from=build /out/ciview /app/ciview
 COPY --from=build /src/ciview.example.toml /app/ciview.toml
+ARG VCS_REF
+LABEL org.opencontainers.image.source="https://github.com/danielfrg/ciview" \
+      org.opencontainers.image.revision=$VCS_REF \
+      org.opencontainers.image.licenses="Apache-2.0"
 ENV CIVIEW_CONFIG=/app/ciview.toml CIVIEW_ADDR=0.0.0.0:8080
 EXPOSE 8080
 USER 65532:65532

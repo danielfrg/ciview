@@ -1,46 +1,34 @@
-# CI View
-
-Read `PRODUCT.md` and `DESIGN.md` before changing the frontend.
+# ciview
 
 ## Architecture
 
-- `cmd/ciview` owns configuration, dependency wiring and server lifecycle.
-- `internal/config` loads TOML and resolves server-side credential references.
-- `internal/providers` normalizes GitHub and Forgejo REST responses.
-- `internal/refresh` owns discovery, scheduling and snapshot publication.
-- `internal/snapshots` provides concurrent, independently owned snapshots.
-- `internal/ci` defines contracts and calculates workflow overviews.
-- `internal/httpapi` exposes cached state through Huma; `internal/web` embeds UI.
-- `frontend` uses plain Vite, Svelte 5, TypeScript and Kit UI with pnpm.
+- `cmd/ciview` owns configuration, dependency wiring, and server lifecycle.
+- `internal/httpapi` serves Huma endpoints; `internal/web` embeds the frontend.
+- `internal/config` loads TOML and credential references; `internal/providers` normalizes provider responses; `internal/refresh`, `internal/snapshots`, and `internal/ci` own scheduling, cached state, and metrics.
+- `frontend` uses Vite, Svelte 5, TypeScript, and Kit UI with pnpm. No SvelteKit or Tailwind.
 
 ## Conventions
 
-Import shared controls directly from `@kenn-io/kit-ui`. Keep CI presentation
-components under `frontend/src/lib/components/ci`; add local wrappers only for
-app-specific behavior. Preserve semantic tokens, Svelte runes, typed props,
-callback props and snippets. No SvelteKit or provider transport in the browser.
-Go owns timing and sample metrics.
+Import shared controls directly from `@kenn-io/kit-ui`; local components own
+app-specific behavior. Use Svelte runes, typed props, and semantic CSS tokens.
+Keep `frontend/src/theme.css` identical across Golinks, CI View, and Homelab Launcher.
+Inter is for interface text; IBM Plex Mono is for identity and data. Preserve
+`scrollbar-gutter: stable`, dark default, and explicit light/system preferences.
+Keep desktop and phone layouts, keyboard focus, and recoverable error states.
 
-Keep this viewer read-only. Preserve terminal outcomes, unavailable duration,
-partial coverage and stale rows. Never expose tokens or raw provider errors.
-Every run link uses its original absolute HTTP(S) URL after validation. Filters
-live in URL query parameters and survive refresh and browser navigation.
+Keep the viewer read-only. Preserve exact terminal outcomes, missing timing, stale rows, and URL filters. Never expose credentials or raw provider errors. Validate original provider links; keep metrics and collection on the Go server.
 
-Local development uses `just api` and `just frontend`; `CIVIEW_API_TARGET`
-overrides the frontend proxy target. Configuration loads at startup from
-`CIVIEW_CONFIG`, defaulting to `ciview.toml`. Keep local config, `.env`,
-credentials and private payloads out of source control.
-Keep specs, plans and agent reports local and uncommitted. Use synthetic examples
-in public documentation and tests; never include machine-specific personal paths.
+## Documentation
 
-## Check
+README sections are overview, installation, usage, configuration, development,
+and build. Use synthetic examples without private paths, hostnames, or deployment
+processes. Keep docs limited to screenshots and essential user references.
+Do not commit plans, specs, agent reports, or design-tool artifacts. The root
+`LICENSE` contains the standard Apache 2.0 text only.
 
-```shell
-go test ./...
-go test -race ./...
-go vet ./...
-pnpm --dir frontend test
-pnpm --dir frontend check
-pnpm --dir frontend build
-just build
-```
+## Development
+
+Use `just install`, `just api`, and `just frontend`. `just check` runs Go race
+tests, vet, frontend tests, and type checks. `just build` verifies and embeds the
+frontend in one executable; `just image-check` builds and smoke-tests a container.
+For UI changes, verify both themes and desktop/phone widths in a browser.

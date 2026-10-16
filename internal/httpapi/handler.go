@@ -41,9 +41,13 @@ func NewHandler(assets fs.FS, reader ci.OverviewReader) http.Handler {
 		response.Body.Status = "ok"
 		return response, nil
 	})
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("ok\n"))
+	})
 	mux.Handle("/", web.NewHandler(assets))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/api" {
+		if strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/api" || r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
 			w.Header().Set("Cache-Control", "no-store")
 		}
 		w.Header().Set("X-Content-Type-Options", "nosniff")

@@ -91,3 +91,24 @@ func TestOpenAPIAndStaticRouting(t *testing.T) {
 		t.Errorf("static POST: %d", w.Code)
 	}
 }
+
+// Probes stay usable during upstream outages and never trigger collection.
+func TestOperationalProbes(t *testing.T) {
+	r := &overviewReader{err: errors.New("provider unavailable")}
+	h := NewHandler(fstest.MapFS{}, r)
+	for _, path := range []string{"/healthz", "/readyz"} {
+		for _, method := range []string{http.MethodGet, http.MethodHead} {
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, httptest.NewRequest(method, path, nil))
+			if w.Code != http.StatusOK {
+				t.Errorf("%s %s: status %d", method, path, w.Code)
+			}
+			if w.Header().Get("Cache-Control") != "no-store" {
+				t.Errorf("%s: probes must not be cached", path)
+			}
+		}
+	}
+	if r.calls != 0 {
+		t.Fatal("probe read provider state")
+	}
+}

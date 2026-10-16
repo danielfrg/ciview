@@ -1,5 +1,8 @@
 set dotenv-load := true
 
+install:
+    pnpm --dir frontend install --frozen-lockfile
+
 api:
     go run ./cmd/ciview
 
@@ -7,14 +10,12 @@ frontend:
     pnpm --dir frontend dev
 
 check:
-    pnpm --dir frontend install --frozen-lockfile
-    pnpm --dir frontend test
-    pnpm --dir frontend check
     go test -race ./...
     go vet ./...
+    pnpm --dir frontend test
+    pnpm --dir frontend check
 
-build:
-    pnpm --dir frontend install --frozen-lockfile
+build: install
     pnpm --dir frontend test
     pnpm --dir frontend check
     pnpm --dir frontend build
@@ -27,3 +28,9 @@ build:
     go test ./...
     go vet ./...
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ciview ./cmd/ciview
+
+image:
+    docker build -t ciview:local .
+
+image-check: image
+    bash scripts/container-smoke.sh ciview:local

@@ -1,0 +1,47 @@
+/* OpenCode desktop-inspired surfaces; Kit UI owns control sizing. */
+@font-face {
+ font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap;
+ src: url("./lib/assets/fonts/Inter.ttf") format("truetype");
+}
+@font-face {
+ font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
+ src: url("./lib/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype");
+}
+@font-face {
+ font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500 700; font-display: swap;
+ src: url("./lib/assets/fonts/IBMPlexMono-Medium.ttf") format("truetype");
+}
+:root {
+ color-scheme: light;
+ scrollbar-gutter: stable;
+ --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+ --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+ font-family: var(--font-sans);
+ --bg-primary: #ffffff; --bg-surface: #ffffff; --bg-inset: #fafafa;
+ --bg-surface-hover: #f2f2f2; --row-hover: #fafafa;
+ --text-primary: #161616; --text-secondary: #5c5c5c; --text-muted: #737373;
+ --border-default: #e5e5e5; --border-muted: #e5e5e5;
+ --accent-blue: #3b5cf6; --accent-green: #2eaf5a;
+ --accent-red: #f17471; --accent-teal: #3b5cf6; --accent-amber: #a67c22;
+ --radius-sm: 6px; --radius-md: 6px; --radius-lg: 8px;
+ --font-weight-medium: 500; --font-weight-semibold: 500;
+ --press-transform: none;
+ --shadow-raised: none; --shadow-sunken: none; --shadow-panel: none;
+ --background: var(--bg-primary); --foreground: var(--text-primary);
+ --card: var(--bg-surface); --muted: var(--bg-inset);
+ --muted-foreground: var(--text-secondary); --border: var(--border-default);
+ --input: var(--border-default); --ring: var(--accent-blue);
+ --destructive: var(--accent-red); --radius: var(--radius-lg);
+ --focus-ring: 2px solid var(--ring);
+ --primary: var(--text-primary); --primary-foreground: var(--bg-surface);
+
+}
+:root.dark {
+ color-scheme: dark;
+ --bg-primary: #161616; --bg-surface: #242424; --bg-inset: #202020;
+ --bg-surface-hover: #303030; --row-hover: #202020;
+ --text-primary: #ffffff; --text-secondary: #b8b8b8; --text-muted: #a3a3a3;
+ --border-default: #333333; --border-muted: #3a3a3a;
+ --accent-blue: #e8a44b; --accent-amber: #e8a44b;
+ --accent-green: #8dcc9c; --accent-red: #ff9b9b; --accent-teal: #8bcbd5;
+}

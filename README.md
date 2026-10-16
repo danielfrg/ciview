@@ -1,56 +1,61 @@
 # CI View
 
-GitHub Actions and Forgejo Actions viewer.
+Read-only GitHub Actions and Forgejo Actions viewer. Browse workflows, recent
+runs, timing, and status across repositories, accounts, and organizations.
 
-## Local development
+<!-- Add a screenshot at docs/screenshots/homepage.png. -->
+![CI View](docs/screenshots/homepage.png)
 
-Requires Go 1.25, Node 26, pnpm 10 and just.
+## Installation
 
-```shell
-pnpm --dir frontend install --frozen-lockfile
+### Docker
+
+Copy [ciview.example.toml](ciview.example.toml) to `ciview.toml` and edit your
+sources, then run:
+
+```zsh
+docker run -d --name ciview \
+  -p 127.0.0.1:8080:8080 \
+  -v "${PWD}/ciview.toml:/app/ciview.toml:ro" \
+  ghcr.io/danielfrg/ciview:latest
+```
+
+Open [http://localhost:8080](http://localhost:8080). The container runs as
+UID/GID 65532; mounted configuration and token files must be readable by that user.
+Pass referenced token environment variables with `-e`, or mount token files
+read-only at the paths in the configuration.
+
+### Standalone
+
+Build from source using the [build instructions](#build), then run:
+
+```zsh
 cp ciview.example.toml ciview.toml
+./ciview
 ```
 
-Edit `ciview.toml` with your source selections and credential references.
-See [configuration](docs/configuration.md) and [credentials](docs/credentials.md).
-Start the API and frontend in separate terminals:
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
-```shell
-just api
-just frontend
-```
+## Usage
 
-Open `http://127.0.0.1:5173`.
+Search and filter by provider, source, repository, or latest status. Filters
+survive reloads and browser navigation. Workflow titles open provider history;
+run bars and status links open the exact run. Hover or focus a bar for details.
+Refresh reloads the cached overview; the server schedules upstream collection.
 
-## Build
+Provider failures retain useful rows and identify stale or incomplete data.
+Source notices explain collection issues. CI View does not trigger or cancel runs.
+API documentation is at `/api/docs`.
 
-```shell
-just check
-just build
-```
-
-The Go executable embeds the frontend. `CIVIEW_CONFIG` selects the TOML file;
-`CIVIEW_ADDR` selects the listen address, defaulting to `127.0.0.1:8080`.
-
-## Container image
-
-The [Docker workflow](.github/workflows/docker.yml) builds Linux amd64 and arm64
-images on pull requests. The Dockerfile runs the frontend tests, type checks and
-build, then Go tests and vet before compiling the embedded server.
-
-Pushes to `main` and manual runs on `main` publish
-`ghcr.io/danielfrg/ciview:latest` and `ghcr.io/danielfrg/ciview:sha-<commit>`.
-Publishing uses the built-in `GITHUB_TOKEN`; no additional CI secrets are needed.
-
-## Config
+## Configuration
 
 Configuration is done via TOML files.
 
 ```toml
-# Public GitHub access works without credentials
+# Public GitHub access works without credentials. Copy to ciview.toml to run.
 [viewer]
 refresh_interval = "10m"
-discovery_interval = "15m"
+discovery_interval = "10m"
 history_runs = 30
 history_pages = 5
 branch = "default"
@@ -58,27 +63,29 @@ branch = "default"
 [[sources]]
 name = "github"
 provider = "github"
+# Set true to hide workflows whose files no longer exist on the selected branch.
+existing_workflows_only = false
+# Generated Dependabot update and dependency-graph workflows are hidden by default.
+show_dependabot_updates = false
 repos = ["actions/checkout"]
 
-# Using users or orgs will read all repos (ignoring archived or forks).
-users = ["danielfrg"]
-
 # For private repositories or a higher GitHub API allowance, add one credential:
-token_env = "CIVIEW_GITHUB_TOKEN"
-token_file = "/run/secrets/github-token"
-orgs = ["example-org"]
-repos = ["example-org/private-repository"]
+# token_env = "CIVIEW_GITHUB_TOKEN"
+# token_file = "/run/secrets/github-token"
+# orgs = ["example-org"]
+# users = ["example-user"]
+# repos = ["example-owner/example-private-repository"]
 
-# Forgejo instances as separate sources. base_url is the instance root.
-[[sources]]
-name = "forgejo"
-provider = "forgejo"
-base_url = "https://forgejo.example.net"
-token_env = "CIVIEW_FORGEJO_TOKEN"
-
-users = ["danielfrg"]
-orgs = ["example-org"]
-repos = ["example-owner/example-repository"]
+# Add named Forgejo instances as separate sources. base_url is the instance root.
+# [[sources]]
+# name = "forgejo"
+# provider = "forgejo"
+# existing_workflows_only = false
+# base_url = "https://forgejo.example.net"
+# token_env = "CIVIEW_FORGEJO_TOKEN"
+# orgs = ["example-org"]
+# users = ["example-user"]
+# repos = ["example-owner/example-repository"]
 ```
 
 `branch = "default"` uses each repository's default branch (usually `main`).
@@ -125,3 +132,68 @@ Forgejo token requires:
 - Repository → Read (read:repository)
 - User → Read (read:user)
 - Organization → Read (read:organization)
+
+`CIVIEW_CONFIG` selects the TOML file (default `ciview.toml`). `CIVIEW_ADDR`
+selects the listen address (default `127.0.0.1:8080`). `CIVIEW_API_TARGET`
+overrides the development proxy target (default `http://127.0.0.1:8080`).
+Credential references are resolved on the server; tokens never reach the browser.
+GitHub fine-grained tokens need Actions read access, plus Contents read access
+for workflow-file verification. Configure credentials only when needed.
+
+Liveness is `/healthz`; readiness is `/readyz`. Both check the running HTTP
+service without depending on provider availability, so upstream outages do not
+remove access to cached data.
+
+## Development
+
+Requires Go 1.25, Node 26, pnpm 10, and just.
+
+```zsh
+just install
+cp ciview.example.toml ciview.toml
+just api
+```
+
+In another terminal:
+
+```zsh
+just frontend
+```
+
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Vite proxies API
+requests to the Go server. Run `just check` for Go race tests, vet, frontend
+tests, and Svelte/TypeScript checks.
+
+The repositories share this structure:
+
+```text
+cmd/<app>/              Configuration and server lifecycle
+internal/               Go application packages
+internal/httpapi/       HTTP API and health probes
+internal/web/           Embedded frontend and static serving
+frontend/src/theme.css  Shared palette, typography, and font definitions
+frontend/src/app.css    Application layouts and interactions
+scripts/                Container smoke test
+docs/screenshots/       README screenshots
+```
+
+The shared theme uses self-hosted Inter and IBM Plex Mono, with dark, light,
+and system preferences. Dark is the default; the header theme control saves
+your choice. Keep `frontend/src/theme.css` identical across these projects.
+Local plans, agent reports, and design-tool state stay out of Git.
+
+## Build
+
+```zsh
+just build
+```
+
+The executable embeds the built frontend and needs no Node runtime. Build and
+smoke-test a local container with:
+
+```zsh
+just image-check
+```
+
+Published images support Linux AMD64 and ARM64. `latest` tracks `main`;
+`sha-<commit>` tags and image digests can pin a deployment.

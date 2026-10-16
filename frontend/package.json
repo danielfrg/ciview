@@ -12,7 +12,7 @@
     "dev": "vite",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "build": "vite build",
-    "test": "node --test src/lib/ci.test.ts"
+    "test": "node --test src/lib/*.test.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "7.2.0",
