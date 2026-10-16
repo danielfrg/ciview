@@ -14,6 +14,7 @@ Read `PRODUCT.md` for user intent and `DESIGN.md` before changing the frontend.
 Import shared controls directly from `@kenn-io/kit-ui`; local components own
 app-specific behavior. Use Svelte runes, typed props, and semantic CSS tokens.
 Keep `frontend/src/theme.css` identical across Golinks, CI View, and Homelab Launcher.
+Load Inter and IBM Plex Mono from Google Fonts; never bundle font binaries.
 Inter is for interface text; IBM Plex Mono is for identity and data. Preserve
 `scrollbar-gutter: stable`, dark default, and explicit light/system preferences.
 Keep desktop and phone layouts, keyboard focus, and recoverable error states.

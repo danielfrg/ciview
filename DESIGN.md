@@ -6,6 +6,9 @@ Use the shared desktop workspace theme in `frontend/src/theme.css`. Keep that
 file identical across Golinks, CI View, and Homelab Launcher. Application layout
 and interaction rules belong in `frontend/src/app.css`.
 
+Load Inter and IBM Plex Mono from Google Fonts with `display=swap`. Do not
+embed font binaries in the repository or production assets.
+
 Inter is for interface text; IBM Plex Mono is for wordmarks, identifiers, and
 technical data. Use neutral surfaces, subtle one-pixel borders, rounded controls,
 and no decorative shadows. Focus is blue in light mode and amber in dark mode.
