@@ -1,5 +1,6 @@
 <script lang="ts">
  import { onMount } from 'svelte';
+ import Activity from '@lucide/svelte/icons/activity';
  import { Button, EmptyState, SearchInput, SelectDropdown, ThemeToggle } from '@kenn-io/kit-ui';
  import WorkflowRow from '$lib/components/ci/WorkflowRow.svelte';
  import SourceNotices from '$lib/components/ci/SourceNotices.svelte';
@@ -54,7 +55,7 @@
 <svelte:head><meta name="description" content="A read-only overview of GitHub and Forgejo CI."/></svelte:head>
 <main>
  <header class="page-header">
-  <h1>CI View</h1>
+  <h1><Activity size={20} strokeWidth={1.5} aria-hidden="true"/>CI View</h1>
   <div class="refresh-controls"><span class="refresh-status" role="status">{#if loading}{overview ? 'Refreshing…' : 'Loading…'}{:else if error}Overview unavailable{:else if stale}Some data is stale{/if}</span><ThemeToggle/><Button surface="outline" class="refresh-button" disabled={loading} onclick={() => void load()} title="Reload the cached overview">Refresh</Button></div>
  </header>
  <section class="filters" aria-label="Workflow filters">
