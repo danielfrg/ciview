@@ -140,7 +140,9 @@ Long repository and workflow names wrap instead of truncating identity.
 The centered outer content container is capped at 1344px, including 32px side
 gutters. Phone gutters become 16px. The header pairs the wordmark with theme and
 refresh controls; the filter grid follows the header and precedes source groups.
-There is no sidebar, decorative dashboard card grid or footer.
+The page reserves a stable scrollbar gutter to prevent horizontal shifts when
+loading or filtering changes the content height. There is no sidebar, decorative
+dashboard card grid or footer.
 
 Source headings separate configured sources. Each source contains transparent
 repository groups with a subtle rounded outline and separators between workflow rows,
