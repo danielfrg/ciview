@@ -1,5 +1,7 @@
 # ciview
 
+Read `PRODUCT.md` for user intent and `DESIGN.md` before changing the frontend.
+
 ## Architecture
 
 - `cmd/ciview` owns configuration, dependency wiring, and server lifecycle.
@@ -23,7 +25,8 @@ Keep the viewer read-only. Preserve exact terminal outcomes, missing timing, sta
 README sections are overview, installation, usage, configuration, development,
 and build. Use synthetic examples without private paths, hostnames, or deployment
 processes. Keep docs limited to screenshots and essential user references.
-Do not commit plans, specs, agent reports, or design-tool artifacts. The root
+Keep `PRODUCT.md` and `DESIGN.md` as concise, maintained project guides.
+Do not commit generated plans, specs, agent reports, or design-tool state. The root
 `LICENSE` contains the standard Apache 2.0 text only.
 
 ## Development

@@ -180,6 +180,7 @@ docs/screenshots/       README screenshots
 The shared theme uses self-hosted Inter and IBM Plex Mono, with dark, light,
 and system preferences. Dark is the default; the header theme control saves
 your choice. Keep `frontend/src/theme.css` identical across these projects.
+`PRODUCT.md` describes users and purpose; `DESIGN.md` records interface rules.
 Local plans, agent reports, and design-tool state stay out of Git.
 
 ## Build

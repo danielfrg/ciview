@@ -14,6 +14,8 @@
 docs
 README.md
 AGENTS.md
+PRODUCT.md
+DESIGN.md
 frontend/dist
 frontend/test-results
 frontend/playwright-report
