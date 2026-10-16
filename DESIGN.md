@@ -1,6 +1,6 @@
 ---
 name: CI View
-description: A charcoal, monospaced workspace for reading CI history.
+description: A clean desktop workspace for reading CI history in light or charcoal themes.
 colors:
   charcoal: "#161616"
   surface: "#242424"
@@ -9,36 +9,42 @@ colors:
   foreground: "#ffffff"
   secondary: "#b8b8b8"
   muted: "#a3a3a3"
-  border: "#4a4a4a"
+  border: "#333333"
   border-muted: "#3a3a3a"
   amber: "#e8a44b"
   success: "#8dcc9c"
   failure: "#ff9b9b"
   running: "#8bcbd5"
-  light-background: "#f5f3ef"
+  light-background: "#ffffff"
   light-surface: "#ffffff"
-  light-inset: "#eeece8"
-  light-surface-hover: "#e8e5df"
-  light-foreground: "#242424"
-  light-secondary: "#57534e"
-  light-muted: "#68635c"
-  light-border: "#bab5ad"
-  light-border-muted: "#d4cfc6"
-  light-focus: "#94601c"
+  light-inset: "#fafafa"
+  light-surface-hover: "#f2f2f2"
+  light-foreground: "#161616"
+  light-secondary: "#5c5c5c"
+  light-muted: "#737373"
+  light-border: "#e5e5e5"
+  light-border-muted: "#e5e5e5"
+  light-focus: "#3b5cf6"
+  light-success: "#2eaf5a"
+  light-failure: "#f17471"
+  light-running: "#3b5cf6"
+  light-waiting: "#a67c22"
 typography:
   title:
-    fontFamily: "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
     fontSize: "0.8125rem"
     fontWeight: 500
     lineHeight: 1.6
   label:
-    fontFamily: "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 400
     lineHeight: 1.4
     letterSpacing: "0.06em"
 rounded:
-  panel: "0px"
+  control: "6px"
+  state: "8px"
+  run: "0px"
 spacing:
   phone-gutter: "16px"
   desktop-gutter: "32px"
@@ -46,12 +52,12 @@ spacing:
   row-column-gap: "24px"
   section-gap: "32px"
 components:
-  repository-panel:
+  workflow-state:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.foreground}"
-    rounded: "{rounded.panel}"
+    rounded: "{rounded.state}"
   run-bar:
-    rounded: "{rounded.panel}"
+    rounded: "{rounded.run}"
     height: "28px"
 ---
 
@@ -59,13 +65,13 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Charcoal Workspace"**
+**Creative North Star: "The Clean Desktop Workspace"**
 
-CI View is an Operate surface: a quiet, monospaced workspace where workflow
-identity and broad run history carry the hierarchy. The visual direction follows
-the charcoal treatment shared with golinks and the restrained data presentation
-of OpenCode's data page. Flat surfaces, precise rules and selective status color
-keep the interface readable across a large collection of workflows.
+CI View is an Operate surface: a clean, restrained workspace where workflow
+identity and broad run history carry the hierarchy. The selected OpenCode
+Desktop Light direction extends to charcoal dark mode with the same transparent
+rows, rounded repository boundaries and gently rounded controls. Inter keeps the interface easy
+to scan; IBM Plex Mono distinguishes branch names, metrics and exact run details.
 
 Kit UI (`@kenn-io/kit-ui`) supplies semantic tokens and reusable controls. Its
 dependency is pinned to an upstream GitHub commit in `frontend/package.json`.
@@ -76,61 +82,58 @@ components belong to CI presentation or app-specific behavior.
 **Key Characteristics:**
 
 - Charcoal on first visit, with explicit light and system preferences respected.
-- Self-hosted monospace typography and restrained weight changes.
-- Square repository panels, horizontal run samples and clear separators.
+- Self-hosted Inter for interface text and IBM Plex Mono for data.
+- Subtly outlined repository groups, horizontal run samples and fine row separators.
 - Kit UI controls at their default sizes.
 
 ## Colors
 
-The default palette uses neutral charcoal layers with warm amber interaction
-accents and distinct CI outcome colors. Frontmatter records the application
-palette; CSS semantic variables remain the implementation source of truth.
+Both themes use neutral surfaces, quiet boundaries and distinct CI outcome
+colors. Frontmatter records the application palette; CSS semantic variables
+remain the implementation source of truth.
 
 ### Primary
 
-Amber supplies keyboard focus, text selection and the input caret. The Kit UI
-accent token retains its upstream name, `--accent-blue`, while its value is
-amber. Do not infer a blue visual accent from the token name.
+Blue supplies keyboard focus and the input caret in light mode.
+Warm amber fills the same role in dark mode through the semantic
+`--accent-blue` token. Text selection uses the browser default highlight.
 
 ### Secondary
 
-Soft green represents success, soft red failure and cyan running. Amber also
-represents queued, waiting and attention states. Canceled, skipped, neutral and
-unknown use neutral ink, with their exact outcome retained in labels and
-accessible descriptions. Status text uses semantic mixtures with foreground
-ink; chips use Kit UI's tone treatments. The running chip locally maps its info
-accent to cyan.
+Green represents success, red failure, and blue (light) or cyan (dark) running.
+Queued, waiting and attention states use amber. Canceled, skipped, neutral and
+unknown use neutral ink, retaining exact labels and accessible descriptions.
+Status text uses semantic mixtures with foreground ink; chips use Kit UI tone
+treatments. The running chip locally maps its info accent to the running color.
 
 ### Neutral
 
-Charcoal is the page background; surface and inset tones separate panels and
-controls. White carries primary text, while secondary and muted grays carry
-supporting information. Default borders define panels and row separators;
-muted borders support quieter control boundaries.
+Light mode uses a white page, pale neutral insets, dark ink and light gray rules.
+Dark mode uses charcoal, slightly lighter control surfaces, white text and muted
+gray rules. Repository groups remain transparent within subtle rounded outlines in both themes. Row hover and
+focus-within add a subtle inset tone without introducing a card silhouette.
 
-The light palette uses warm off-white, white surfaces and dark neutral ink,
-with a darker amber focus accent. Light-mode outcome accents inherit Kit UI's
-semantic palette. First visit selects dark mode; the header ThemeToggle persists
-the user's preference under `ciview-theme`. An explicit light or system mode
-must survive reloads, and system mode follows the operating system.
+First visit selects dark mode; the header ThemeToggle persists the user's
+preference under `ciview-theme`. An explicit light or system mode must survive
+reloads, and system mode follows the operating system.
 
 **The Outcome Rule.** Color supports the exact status label; it never replaces
 it or merges distinct terminal outcomes.
 
 ## Typography
 
-IBM Plex Mono is self-hosted in regular and medium weights with `font-display:
-swap`; fallbacks are `ui-monospace`, `SFMono-Regular`, `Menlo` and `monospace`.
-Both the sans and mono semantic font roles use this stack. Medium and semibold
-semantic weights resolve to 500.
+Inter is self-hosted as a variable font (100–900) for interface text, with
+system sans-serif fallbacks. IBM Plex Mono is self-hosted in regular and medium
+weights for the wordmark, branch scope, metric values and run tooltips, with
+`ui-monospace`, `SFMono-Regular`, `Menlo` and `monospace` fallbacks. Both use
+`font-display: swap`. Medium and semibold semantic weights resolve to 500.
 
-The uppercase CI View wordmark uses a compact medium heading (1rem, line-height
-1.25). Workflow titles use the title style. Source headings use
-the label style with uppercase text. Supporting copy is restrained
-(.8125rem), branch scope is quieter (.6875rem on desktop), and metric labels and
-values use .625rem and .75rem respectively. Phone metrics increase to .6875rem
-and .875rem. Metric numerals are tabular. Long repository and workflow names
-wrap instead of truncating identity.
+The uppercase CI View wordmark is compact (1rem, weight 500, line-height 1.25).
+Workflow titles use the frontmatter title style; uppercase source headings use
+the label style. Supporting text is .8125rem, branch scope .6875rem on desktop,
+and metric labels and values .625rem and .75rem. Phone metrics increase to
+.6875rem and .875rem, and branch scope to .75rem. Metric numerals are tabular.
+Long repository and workflow names wrap instead of truncating identity.
 
 ## Layout
 
@@ -139,14 +142,14 @@ gutters. Phone gutters become 16px. The header pairs the wordmark with theme and
 refresh controls; the filter grid follows the header and precedes source groups.
 There is no sidebar, decorative dashboard card grid or footer.
 
-Source headings separate configured sources. Each source contains bordered
-repository panels, each with one workflow per row and no repository or column
-heading. A row title combines the repository link, a hyphen and the workflow
+Source headings separate configured sources. Each source contains transparent
+repository groups with a subtle rounded outline and separators between workflow rows,
+without repository or column headings. A row title combines the repository link, a hyphen and the workflow
 history link; branch scope sits beneath it.
 
 Desktop rows align identity, history, three metrics and latest status. Rows have
-20px padding, a minimum height of 108px and 24px column gaps. Repository panels
-are separated by 16px and source groups by 32px. At 1190px, rows become two
+20px padding, a minimum height of 108px and 24px column gaps. Repository groups
+have 16px of space between them; source groups are separated by 32px. At 1190px, rows become two
 columns with metrics and latest status below identity and history, and search
 spans the filter grid. At 640px, filters form two columns and rows stack identity,
 status, history and metrics. Large configured samples scroll within the history
@@ -154,18 +157,19 @@ region; they must not widen the page.
 
 ## Elevation & Depth
 
-Repository panels use tonal separation and one-pixel borders without shadows.
+Repository groups use a one-pixel outline, rounded corners and subtle row hover
+without shadows. Fine horizontal rules divide workflows within each group.
 Raised, sunken and panel shadow tokens are disabled. Preserve Kit UI's transient
 menu behavior and chrome; do not add decorative elevation to the overview.
 Run tooltips float above content so their exact details remain readable.
 
 ## Shapes
 
-Application panel, field and tooltip radius tokens are square (0px). Run bars
-are rectangular. Preserve Kit UI's native component silhouettes, including
-pill-shaped chips and circular status dots; the square panel language does not
-require overriding those component styles. Small focus-outline and skeleton
-corners are implementation details, not a second panel style.
+Controls and run tooltips use gently rounded corners (6px); loading and empty
+state containers use a slightly larger radius (8px). Notices use the control
+radius. Repository group outlines use the larger radius (8px). Run bars stay square.
+Preserve Kit UI's native component silhouettes, including pill-shaped chips
+and circular status dots, without changing their default sizes.
 
 ## Components
 
@@ -178,12 +182,16 @@ use their default medium size; Chip also defaults to medium. Theme and palette
 overrides change their visual character without replacing their sizing contract.
 
 Search is labeled for assistive technology, and selects remain keyboard
-accessible. The search field wrapper owns its amber focus border, avoiding a
+accessible. The search field wrapper owns its themed focus border, avoiding a
 second outline on the nested input. Select triggers stay still while their
 fixed-position menus are measured and opened. Filters live in URL query
 parameters and survive refresh, back and forward navigation.
 
 ### Workflow rows and history
+
+Empty history slots use a dedicated neutral fill, mixed from muted text and the
+page background. They remain visible against resting, hovered and keyboard-focused
+rows in both themes, and stay distinct from observed neutral outcomes.
 
 History shows the complete server-displayed sample, normally 30 runs, oldest
 to newest. Each run bar has constant visual height (28px) inside a 44px link
@@ -220,7 +228,8 @@ never expose credentials or raw provider errors.
 ### Motion and focus
 
 Keep visible focus on links, controls and disclosure summaries. App links use an
-amber two-pixel outline with an offset; Kit UI owns shared control focus.
+themed two-pixel outline with an offset (blue in light, amber in dark); Kit UI
+owns shared control focus.
 Press transforms are disabled. Respect reduced motion for animation and
 transitions, including library indicators.
 
@@ -237,6 +246,6 @@ transitions, including library indicators.
 ### Don't:
 
 - **Don't** add control size overrides to create artificial density.
-- **Don't** add shadows, rounded repository cards or a sidebar to the overview.
+- **Don't** turn ruled workflow groups into enclosing cards or add decorative shadows or a sidebar.
 - **Don't** invent metrics, infer links or use color as the only status signal.
 - **Don't** hide errors, pending collection or unavailable selections behind an empty state.
