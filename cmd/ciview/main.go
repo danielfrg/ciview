@@ -14,6 +14,7 @@ import (
 	"ciview/internal/ci"
 	"ciview/internal/config"
 	"ciview/internal/httpapi"
+	"ciview/internal/mcp"
 	"ciview/internal/providers/forgejo"
 	"ciview/internal/providers/github"
 	"ciview/internal/refresh"
@@ -38,6 +39,10 @@ func main() {
 }
 
 func run(ctx context.Context, path, addr string) error {
+	hosts, err := mcp.ParseAllowedHosts(os.Getenv("CIVIEW_MCP_ALLOWED_HOSTS"))
+	if err != nil {
+		return err
+	}
 	cfg, err := config.Load(path)
 	if err != nil {
 		return err
@@ -65,7 +70,7 @@ func run(ctx context.Context, path, addr string) error {
 	store := snapshots.NewMemory()
 	coordinator := refresh.New(cfg, providers, store)
 	overview := ci.NewOverview(store, coordinator, cfg.Viewer.HistoryRuns, cfg.Viewer.Branch, cfg.Viewer.RefreshDuration())
-	server := &http.Server{Addr: addr, Handler: httpapi.NewHandler(web.Assets(), overview), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	server := &http.Server{Addr: addr, Handler: httpapi.NewHandler(web.Assets(), overview, hosts...), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return errors.New("Unable to listen on CIVIEW_ADDR")

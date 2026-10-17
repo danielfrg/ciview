@@ -45,3 +45,9 @@ native disclosure below the workflows. Preserve verified workflow-file markers
 independently of run outcomes. Provider links open their original validated URLs.
 
 Use `PRODUCT.md` for user intent and `README.md` for setup and commands.
+
+## Agent Interface
+
+`/mcp` exposes typed MCP tools over stateless Streamable HTTP. Lists are
+bounded and stable; errors are sanitized. Agent access follows the same
+application rules and cached data contracts as the browser.

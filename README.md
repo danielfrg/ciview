@@ -144,6 +144,27 @@ Liveness is `/healthz`; readiness is `/readyz`. Both check the running HTTP
 service without depending on provider availability, so upstream outages do not
 remove access to cached data.
 
+### MCP
+
+The native Streamable HTTP endpoint is `/mcp`. Tools: `list_workflows`, `get_workflow`, `list_runs`, `get_source_status`.
+All tools read cached state without triggering upstream collection. History may be partial; results preserve exact outcomes, nullable timing, source issues, and freshness. No run triggering, cancellation, or logs are exposed.
+
+List tools accept `limit` (default 20, maximum 100) and nonnegative `offset`,
+returning `total` and nullable `next_offset`. Responses are structured JSON.
+Connect a remote MCP client using its Streamable HTTP transport, for example:
+
+```json
+{"url": "http://127.0.0.1:8080/mcp", "transport": "streamable-http"}
+```
+
+MCP accepts localhost by default. For a proxy or container network, set
+`CIVIEW_MCP_ALLOWED_HOSTS` to a comma-separated list of exact hostnames
+or IP addresses, such as `app.example.net,app.default.svc.cluster.local`.
+Do not include schemes, ports, or wildcards. Invalid values fail startup.
+Browser origins must match the request host and port. Requests use POST with a
+1 MiB body limit; responses use `Cache-Control: no-store`. The endpoint has no
+built-in authentication: use a trusted network or an authenticated proxy.
+
 ## Development
 
 Requires Go 1.25, Node 26, pnpm 10, and just.

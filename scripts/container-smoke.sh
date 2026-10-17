@@ -22,4 +22,5 @@ asset=$(printf '%s' "$html" | sed -n 's/.*src="\([^" ]*\.js\)".*/\1/p')
 curl --fail --silent "$base$asset" >/dev/null
 curl --fail --silent "$base/api/docs" >/dev/null
 curl --fail --silent "$base/api/openapi.json" >/dev/null
+go run ./testdata/compat/mcp_smoke.go "$base/mcp"
 printf 'Container verified: nonroot, read-only filesystem, embedded UI, API docs, and probes.\n'

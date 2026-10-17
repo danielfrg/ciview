@@ -9,6 +9,8 @@ Read `PRODUCT.md` for user intent and `DESIGN.md` before changing the frontend.
 - `internal/config` loads TOML and credential references; `internal/providers` normalizes provider responses; `internal/refresh`, `internal/snapshots`, and `internal/ci` own scheduling, cached state, and metrics.
 - `frontend` uses Vite, Svelte 5, TypeScript, and Kit UI with pnpm. No SvelteKit or Tailwind.
 
+- `internal/mcp` owns typed MCP tools and the host/origin policy; keep its transport conventions consistent across the three apps.
+
 ## Conventions
 
 Import shared controls directly from `@kenn-io/kit-ui`; local components own

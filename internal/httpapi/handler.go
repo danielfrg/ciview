@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"ciview/internal/ci"
+	"ciview/internal/mcp"
 	"ciview/internal/web"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
@@ -20,8 +21,9 @@ type healthResponse struct {
 	}
 }
 
-func NewHandler(assets fs.FS, reader ci.OverviewReader) http.Handler {
+func NewHandler(assets fs.FS, reader ci.OverviewReader, mcpHosts ...string) http.Handler {
 	mux := http.NewServeMux()
+	mux.Handle("/mcp", mcp.NewHandler(reader, mcpHosts))
 	cfg := huma.DefaultConfig("CI View API", "0.1.0")
 	cfg.OpenAPIPath = "/api/openapi"
 	cfg.DocsPath = "/api/docs"

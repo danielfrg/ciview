@@ -37,3 +37,7 @@ colors, and controls for triggering or canceling provider runs.
 Support keyboard access to run details, text labels alongside status colors,
 readable light and dark themes, reduced motion, and phone layouts. Long names
 wrap; large run samples scroll inside their own region.
+
+## Agent Access
+
+All tools read cached state without triggering upstream collection. History may be partial; results preserve exact outcomes, nullable timing, source issues, and freshness. No run triggering, cancellation, or logs are exposed.
