@@ -1,40 +1,32 @@
-# ciview
+# Agent Instructions
+
+CI View is a self-hosted, read-only viewer for GitHub Actions and Forgejo
+Actions. It builds one Go binary that serves a Huma HTTP API, an MCP endpoint,
+and an embedded Svelte 5 frontend over cached provider data.
 
 Read `PRODUCT.md` for user intent and `DESIGN.md` before changing the frontend.
 
+The `README.md` and `justfile` own setup and usage.
+They are written for humans: avoid big restructures, but update them when changes are user facing.
+
 ## Architecture
 
-- `cmd/ciview` owns configuration, dependency wiring, and server lifecycle.
-- `internal/httpapi` serves Huma endpoints; `internal/web` embeds the frontend.
-- `internal/config` loads TOML and credential references; `internal/providers` normalizes provider responses; `internal/refresh`, `internal/snapshots`, and `internal/ci` own scheduling, cached state, and metrics.
-- `frontend` uses Vite, Svelte 5, TypeScript, and Kit UI with pnpm. No SvelteKit or Tailwind.
+- Go for the API in /cmd and /internal.
+- TypeScript and Svelte 5 for the frontend in /frontend.
+- Should build into a single binary with an embedded frontend.
 
-- `internal/mcp` owns typed MCP tools and the host/origin policy; keep its transport conventions consistent across the three apps.
+## Behavior Invariants
 
-## Conventions
+- Keep the viewer read-only: no run triggering, cancellation, or logs.
+- Preserve exact terminal outcomes, missing timing, stale rows, and URL filters.
+- Never expose credentials or raw provider errors; credential references resolve on the server and tokens never reach the browser.
+- Validate original provider links; keep metrics and collection on the Go server.
+- MCP tools read cached state without triggering upstream collection and follow the same data contracts as the HTTP API.
 
-Import shared controls directly from `@kenn-io/kit-ui`; local components own
-app-specific behavior. Use Svelte runes, typed props, and semantic CSS tokens.
-Keep `frontend/src/theme.css` identical across Golinks, CI View, and Homelab Launcher.
-Load Inter and IBM Plex Mono from Google Fonts; never bundle font binaries.
-Inter is for interface text; IBM Plex Mono is for identity and data. Preserve
-`scrollbar-gutter: stable`, dark default, and explicit light/system preferences.
-Keep desktop and phone layouts, keyboard focus, and recoverable error states.
+## Frontend Conventions
 
-Keep the viewer read-only. Preserve exact terminal outcomes, missing timing, stale rows, and URL filters. Never expose credentials or raw provider errors. Validate original provider links; keep metrics and collection on the Go server.
+`DESIGN.md` owns the theme, typography, layout, and interaction rules; read it before changing the frontend.
 
-## Documentation
+## Deployment
 
-README sections are overview, installation, usage, configuration, development,
-and build. Use synthetic examples without private paths, hostnames, or deployment
-processes. Keep docs limited to screenshots and essential user references.
-Keep `PRODUCT.md` and `DESIGN.md` as concise, maintained project guides.
-Do not commit generated plans, specs, agent reports, or design-tool state. The root
-`LICENSE` contains the standard Apache 2.0 text only.
-
-## Development
-
-Use `just install`, `just api`, and `just frontend`. `just check` runs Go race
-tests, vet, frontend tests, and type checks. `just build` verifies and embeds the
-frontend in one executable; `just image-check` builds and smoke-tests a container.
-For UI changes, verify both themes and desktop/phone widths in a browser.
+Daniel (danielfrg/danrodriguez) deploys this service in his homelab; the deployment source is in `~/code/danielfrg/homelab`.
