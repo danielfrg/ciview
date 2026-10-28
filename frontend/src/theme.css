@@ -1,35 +1,139 @@
-/* OpenCode desktop-inspired surfaces; Kit UI owns control sizing. */
+/*
+ * Shared theme tokens. This is the only file with palette values.
+ *
+ * It overrides generic design tokens: light on :root, dark on :root.dark.
+ * Replace this file as a whole to adopt another palette. components.css and
+ * app.css give optional tokens kit-ui fallbacks. --brand-accent is the single
+ * editable brand color.
+ */
 :root {
- color-scheme: light;
- scrollbar-gutter: stable;
- --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
- --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
- font-family: var(--font-sans);
- --bg-primary: #ffffff; --bg-surface: #ffffff; --bg-inset: #fafafa;
- --bg-surface-hover: #f2f2f2; --row-hover: #fafafa;
- --text-primary: #161616; --text-secondary: #5c5c5c; --text-muted: #737373;
- --border-default: #e5e5e5; --border-muted: #e5e5e5;
- --accent-blue: #3b5cf6; --accent-green: #2eaf5a;
- --accent-red: #f17471; --accent-teal: #3b5cf6; --accent-amber: #a67c22;
- --radius-sm: 6px; --radius-md: 6px; --radius-lg: 8px;
- --font-weight-medium: 500; --font-weight-semibold: 500;
- --press-transform: none;
- --shadow-raised: none; --shadow-sunken: none; --shadow-panel: none;
- --background: var(--bg-primary); --foreground: var(--text-primary);
- --card: var(--bg-surface); --muted: var(--bg-inset);
- --muted-foreground: var(--text-secondary); --border: var(--border-default);
- --input: var(--border-default); --ring: var(--accent-blue);
- --destructive: var(--accent-red); --radius: var(--radius-lg);
- --focus-ring: 2px solid var(--ring);
- --primary: var(--text-primary); --primary-foreground: var(--bg-surface);
+  color-scheme: light;
 
+  --bg-sidebar: #f5f5f5;
+  --bg-primary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #ebebed;
+  --bg-inset: #f2f2f3;
+  --border-default: #dddddf;
+  --border-muted: #e7e7e9;
+
+  --bg-control: #ececef;
+  --bg-control-hover: #e3e3e7;
+  --bg-popover: #ffffff;
+  --border-popover: #d2d3d7;
+  --bg-popover-selected: #e4e5e9;
+  --bg-popover-hover: #eeeef1;
+  --bg-notification: #ffffff;
+  --border-notification: #d9dade;
+  --bg-notification-action: #f0f0f2;
+
+  --text-primary: #25262a;
+  --text-secondary: #44464c;
+  --text-muted: #6a6d75;
+
+  --brand-accent: #3b6ede;
+  --brand-accent-foreground: #ffffff;
+  --accent-blue: var(--brand-accent);
+  --accent-purple: var(--brand-accent);
+  --text-accent: var(--brand-accent);
+  --accent-amber: #b45309;
+  --accent-green: #047857;
+  --accent-red: #c62828;
+  --accent-teal: #0e7490;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 6px 20px #00000015;
+  --shadow-lg: 0 8px 24px #00000018;
+  --shadow-popover: 0 3px 8px #00000020, 0 2px 5px #00000020, 0 1px 1px #00000020;
+  --overlay-bg: #00000040;
+  /* Flat controls: only floating surfaces (menus, the overlay sidebar) cast a
+   * shadow. kit-ui falls back to --shadow-sm for a few of these when unset. */
+  --shadow-raised: none;
+  --shadow-sunken: none;
+  --shadow-panel: none;
+  --press-transform: none;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --kit-control-radius: 9999px;
+  --kit-control-height: 28px;
+  --kit-control-font-size: 0.75rem;
+  --focus-ring: 2px solid var(--brand-accent);
+
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --letter-spacing-label: 0;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --font-size-2xs: 0.6875rem; /* 11px */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.8125rem; /* 13px */
+  --font-size-md: 0.8125rem; /* 13px, the interface base */
+  --font-size-lg: 0.9375rem; /* 15px */
+  --font-size-xl: 1.125rem; /* 18px */
+  --font-size-2xl: 1.5rem; /* 24px */
+
+  --header-height: 44px;
 }
+
 :root.dark {
- color-scheme: dark;
- --bg-primary: #161616; --bg-surface: #242424; --bg-inset: #202020;
- --bg-surface-hover: #303030; --row-hover: #202020;
- --text-primary: #ffffff; --text-secondary: #b8b8b8; --text-muted: #a3a3a3;
- --border-default: #333333; --border-muted: #3a3a3a;
- --accent-blue: #e8a44b; --accent-amber: #e8a44b;
- --accent-green: #8dcc9c; --accent-red: #ff9b9b; --accent-teal: #8bcbd5;
+  color-scheme: dark;
+
+  --bg-sidebar: #191a1d;
+  --bg-primary: #1f2023;
+  --bg-surface: #25262b;
+  --bg-surface-hover: #303136;
+  --bg-inset: #232428;
+  --border-default: #383a3f;
+  --border-muted: #2b2d32;
+
+  --bg-control: lch(21.504 3.034 272.695);
+  --bg-control-hover: lch(25.504 3.034 272.695);
+  --bg-popover: #393a3e;
+  --border-popover: #686a72;
+  --bg-popover-selected: #505158;
+  --bg-popover-hover: #45464d;
+  --bg-notification: #303134;
+  --border-notification: #4c4d50;
+  --bg-notification-action: #3b3c40;
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #e5e6ea;
+  --text-muted: #9c9da1;
+
+  /* kit-ui defines dark accent aliases too; keep both modes tied to the same
+   * editable brand. A lighter text tint keeps links readable on charcoal. */
+  --accent-blue: var(--brand-accent);
+  --accent-purple: var(--brand-accent);
+  --text-accent: color-mix(in srgb, var(--brand-accent) 70%, var(--text-primary));
+
+  --accent-amber: #f0a64a;
+  --accent-green: #4cc38a;
+  --accent-red: #f27474;
+  --accent-teal: #3fc1d6;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px #00000045;
+  --shadow-lg: 0 12px 32px #00000055, 0 1px 4px #00000045;
+  --overlay-bg: #09090d88;
+}
+
+/* Repeats kit-ui's handheld type scale (larger, so inputs do not zoom on
+ * iOS), which the base block above would otherwise override by source order. */
+@media (hover: none) and (pointer: coarse) {
+  :root {
+    --font-size-2xs: 0.75rem;
+    --font-size-xs: 0.875rem;
+    --font-size-sm: 0.9375rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.0625rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.75rem;
+  }
 }
