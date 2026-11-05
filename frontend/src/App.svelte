@@ -205,10 +205,14 @@
         ...states.map((state) => ({ value: state, label: statusLabel(state as RunState) })),
       ]}
     />
-    {#if activeFilters}<div class="filter-actions">
-        <Button surface="outline" class="clear-filters" onclick={clearFilters}>Clear filters</Button
-        >
-      </div>{/if}
+    <div class="filter-actions">
+      <Button
+        surface="outline"
+        class="clear-filters"
+        disabled={!activeFilters}
+        onclick={clearFilters}>Clear filters</Button
+      >
+    </div>
   </section>
   {#if error}<div class="request-notice" role="alert">
       <div>
