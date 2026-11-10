@@ -7,7 +7,7 @@ one-off styling for each new control.
 
 ## Component Rules
 
-Theme and component styles come from the shared design system; keep `theme.css` and `components.css` unchanged and put app-specific rules in `app.css`.
+Theme and component styles come from the shared design system.
 
 - Use Svelte 5 runes, typed props, and callback props.
 - Keep desktop and phone layouts, keyboard focus, and recoverable error states.
