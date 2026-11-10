@@ -26,7 +26,3 @@ They are written for humans: avoid big restructures, but update them when change
 ## Frontend Conventions
 
 `DESIGN.md` owns the theme, typography, layout, and interaction rules; read it before changing the frontend.
-
-## Deployment
-
-Daniel (danielfrg/danrodriguez) deploys this service in his homelab; the deployment source is in `~/code/danielfrg/homelab`.
