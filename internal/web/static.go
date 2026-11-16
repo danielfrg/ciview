@@ -17,8 +17,13 @@ var files embed.FS
 
 func Assets() fs.FS { assets, _ := fs.Sub(files, "dist"); return assets }
 
-// NewHandler serves only actual files. There is no directory listing, hidden
-// file access, or app-shell fallback for unknown API or asset URLs.
+// appRoutes are the client-side pages. Only these exact paths serve the app
+// shell; every other unknown URL stays a 404.
+var appRoutes = map[string]bool{"workflows": true, "runners": true}
+
+// NewHandler serves only actual files and the named app routes. There is no
+// directory listing, hidden file access, or app-shell fallback for unknown API
+// or asset URLs.
 func NewHandler(assets fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -27,7 +32,7 @@ func NewHandler(assets fs.FS) http.Handler {
 			return
 		}
 		name := strings.TrimPrefix(r.URL.Path, "/")
-		if name == "" {
+		if name == "" || appRoutes[name] {
 			name = "index.html"
 		}
 		if !fs.ValidPath(name) || strings.HasPrefix(name, "api/") || name == "api" {
