@@ -22,7 +22,7 @@ func main() {
 	if e != nil {
 		panic(e)
 	}
-	if len(v.Tools) != 4 {
+	if len(v.Tools) != 5 {
 		panic("Unexpected tool count")
 	}
 	out, e := s.CallTool(ctx, &sdk.CallToolParams{Name: "get_source_status", Arguments: map[string]any{}})
