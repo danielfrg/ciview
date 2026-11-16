@@ -266,7 +266,7 @@ test("workflow hierarchy separates sources and repository identities", () => {
   };
   const rows = [anotherRepo, workflow, otherSource, secondCheck];
   const before = structuredClone(rows);
-  const grouped = ci.groupWorkflows(rows);
+  const grouped = ci.groupWorkflows(rows, "name");
   assert.deepEqual(
     grouped.map((source) => ({
       name: source.name,
@@ -448,13 +448,14 @@ const layout = (groups: ci.SourceGroup[]) =>
 
 test("sort is read from and written to the URL, ignoring unknown values", () => {
   assert.equal(readFilters(new URLSearchParams("sort=failing")).sort, "failing");
-  assert.equal(readFilters(new URLSearchParams("sort=newest")).sort, "newest");
+  assert.equal(readFilters(new URLSearchParams("sort=name")).sort, "name");
+  assert.equal(readFilters(new URLSearchParams("sort=newest")).sort, "");
   assert.equal(readFilters(new URLSearchParams("sort=bogus")).sort, "");
   assert.equal(readFilters(new URLSearchParams()).sort, "");
-  const filters = readFilters(new URLSearchParams("sort=newest&other=keep"));
-  assert.equal(writeFilters(filters, new URLSearchParams("other=keep")).get("sort"), "newest");
+  const filters = readFilters(new URLSearchParams("sort=name&other=keep"));
+  assert.equal(writeFilters(filters, new URLSearchParams("other=keep")).get("sort"), "name");
   assert.equal(
-    writeFilters({ ...filters, sort: "" }, new URLSearchParams("sort=newest")).has("sort"),
+    writeFilters({ ...filters, sort: "" }, new URLSearchParams("sort=name")).has("sort"),
     false,
   );
 });
@@ -492,7 +493,7 @@ test("failing first orders repositories and sources by their worst workflow", ()
   ]);
 });
 
-test("newest run orders by latest run time with missing runs last and name as tie-break", () => {
+test("newest run is the default and orders by latest run time with missing runs last and name as tie-break", () => {
   const rows = [
     sortRow("old", "alpha", "failure", "2026-10-14T09:00:00Z"),
     sortRow("none", "beta", null),
@@ -500,7 +501,7 @@ test("newest run orders by latest run time with missing runs last and name as ti
     sortRow("tie-b", "gamma", "success", "2026-10-14T12:00:00Z"),
     sortRow("tie-a", "gamma", "success", "2026-10-14T12:00:00Z"),
   ];
-  assert.deepEqual(layout(ci.groupWorkflows(rows, "newest")), [
+  assert.deepEqual(layout(ci.groupWorkflows(rows)), [
     [
       "github",
       [
@@ -512,10 +513,12 @@ test("newest run orders by latest run time with missing runs last and name as ti
   ]);
 });
 
-test("name sort is the default and unchanged", () => {
-  const rows = [sortRow("b", "beta", "failure"), sortRow("a", "alpha", "success")];
-  assert.deepEqual(layout(ci.groupWorkflows(rows)), layout(ci.groupWorkflows(rows, "")));
-  assert.deepEqual(layout(ci.groupWorkflows(rows)), [
+test("name sort stays alphabetical regardless of run times", () => {
+  const rows = [
+    sortRow("b", "beta", "failure", "2026-10-14T18:00:00Z"),
+    sortRow("a", "alpha", "success", "2026-10-14T09:00:00Z"),
+  ];
+  assert.deepEqual(layout(ci.groupWorkflows(rows, "name")), [
     ["github", [["alpha", ["a"]], ["beta", ["b"]]]],
   ]);
 });

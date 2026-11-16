@@ -80,8 +80,8 @@ export type Overview = {
   generated_at: string;
   poll_interval_seconds: number;
 };
-export const sortModes = ["failing", "newest"] as const;
-// "" is the default: alphabetical by name.
+export const sortModes = ["failing", "name"] as const;
+// "" is the default: newest latest run first.
 export type SortMode = "" | (typeof sortModes)[number];
 export type Filters = {
   search: string;
@@ -314,8 +314,8 @@ function workflowComparator(sort: SortMode): (a: Workflow, b: Workflow) => numbe
         (b.latest_run ? stateTier[b.latest_run.state] : 4) ||
       latestTime(b) - latestTime(a) ||
       byName(a, b);
-  if (sort === "newest") return (a, b) => latestTime(b) - latestTime(a) || byName(a, b);
-  return byName;
+  if (sort === "name") return byName;
+  return (a, b) => latestTime(b) - latestTime(a) || byName(a, b);
 }
 export function groupWorkflows(rows: Workflow[], sort: SortMode = ""): SourceGroup[] {
   const sources = new Map<string, Map<string, RepositoryGroup>>();
@@ -336,7 +336,7 @@ export function groupWorkflows(rows: Workflow[], sort: SortMode = ""): SourceGro
   // Repositories and sources rank by their best workflow, which sorts first.
   const best = (group: RepositoryGroup) => group.workflows[0];
   const byRepository = (a: RepositoryGroup, b: RepositoryGroup) =>
-    (sort ? compare(best(a), best(b)) : 0) ||
+    (sort === "name" ? 0 : compare(best(a), best(b))) ||
     a.repository.full_name.localeCompare(b.repository.full_name) ||
     a.repository.key.localeCompare(b.repository.key);
   return [...sources]
@@ -351,7 +351,7 @@ export function groupWorkflows(rows: Workflow[], sort: SortMode = ""): SourceGro
     }))
     .sort(
       (a, b) =>
-        (sort ? compare(best(a.repositories[0]), best(b.repositories[0])) : 0) ||
+        (sort === "name" ? 0 : compare(best(a.repositories[0]), best(b.repositories[0]))) ||
         a.name.localeCompare(b.name),
     );
 }

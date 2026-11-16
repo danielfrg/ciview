@@ -136,19 +136,17 @@ h1 {
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.7fr) minmax(125px, 1fr) minmax(125px, 1fr) minmax(
-      180px,
-      1.4fr
-    ) minmax(125px, 1fr);
-  gap: 10px;
+  grid-template-columns:
+    minmax(170px, 1.5fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(130px, 1.3fr)
+    minmax(100px, 1fr) minmax(110px, 1fr);
+  gap: 8px;
   margin-bottom: 40px;
   align-items: center;
 }
 .filters:has(.filter-actions) {
-  grid-template-columns: minmax(220px, 1.7fr) minmax(125px, 1fr) minmax(125px, 1fr) minmax(
-      180px,
-      1.4fr
-    ) minmax(125px, 1fr) max-content;
+  grid-template-columns:
+    minmax(170px, 1.5fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(130px, 1.3fr)
+    minmax(100px, 1fr) minmax(110px, 1fr) max-content;
 }
 .filters > *,
 .filters .kit-select-dropdown {
@@ -470,10 +468,10 @@ h1 {
     justify-self: end;
   }
   .filters {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .filters:has(.filter-actions) {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) max-content;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) max-content;
   }
   .search-label {
     grid-column: 1 / -1;

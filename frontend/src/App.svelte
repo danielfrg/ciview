@@ -38,6 +38,7 @@
   let providers = $derived(
     [...new Set((overview?.sources ?? []).map((source) => source.provider))].sort(),
   );
+  let multipleSources = $derived((overview?.sources.length ?? 0) > 1);
   let activeFilters = $derived(Object.values(filters).some(Boolean));
   let unavailableSources = $derived(
     overview?.sources.some(
@@ -148,7 +149,7 @@
       <SearchInput
         block
         ariaLabel="Search workflows and repositories"
-        placeholder="Search workflows or repositories…"
+        placeholder="Search workflows…"
         value={filters.search}
         oninput={(value) => updateFilter("search", value, true)}
       />
@@ -210,9 +211,9 @@
       value={filters.sort}
       onchange={(value) => updateFilter("sort", value)}
       options={[
-        { value: "", label: "Sort by name" },
+        { value: "", label: "Newest run" },
         { value: "failing", label: "Failing first" },
-        { value: "newest", label: "Newest run" },
+        { value: "name", label: "By name" },
       ]}
     />
     <div class="filter-actions">
@@ -269,7 +270,7 @@
       <div class="source-groups">
         {#each groups as source (source.name)}
           <section class="source-group" aria-label={source.name}>
-            <h2 class="source-heading">{source.name}</h2>
+            {#if multipleSources}<h2 class="source-heading">{source.name}</h2>{/if}
             <div class="repository-groups">
               {#each source.repositories as group (group.repository.key)}
                 <section class="repository-group" aria-label={group.repository.full_name}>
