@@ -27,7 +27,7 @@
   let disposed = false;
   let failures = 0;
   let visible = $derived(filterWorkflows(overview?.workflows ?? [], filters));
-  let groups = $derived(groupWorkflows(visible));
+  let groups = $derived(groupWorkflows(visible, filters.sort));
   let repositories = $derived(
     [
       ...new Map(
@@ -203,6 +203,16 @@
       options={[
         { value: "", label: "All statuses" },
         ...states.map((state) => ({ value: state, label: statusLabel(state as RunState) })),
+      ]}
+    />
+    <SelectDropdown
+      title="Sort"
+      value={filters.sort}
+      onchange={(value) => updateFilter("sort", value)}
+      options={[
+        { value: "", label: "Sort by name" },
+        { value: "failing", label: "Failing first" },
+        { value: "newest", label: "Newest run" },
       ]}
     />
     <div class="filter-actions">

@@ -80,12 +80,16 @@ export type Overview = {
   generated_at: string;
   poll_interval_seconds: number;
 };
+export const sortModes = ["failing", "newest"] as const;
+// "" is the default: alphabetical by name.
+export type SortMode = "" | (typeof sortModes)[number];
 export type Filters = {
   search: string;
   provider: string;
   source: string;
   repository: string;
   status: string;
+  sort: SortMode;
 };
 
 function fail(): never {
@@ -284,7 +288,36 @@ export function filterWorkflows(rows: Workflow[], filters: Filters): Workflow[] 
 }
 export type RepositoryGroup = { repository: Repository; workflows: Workflow[] };
 export type SourceGroup = { name: string; repositories: RepositoryGroup[] };
-export function groupWorkflows(rows: Workflow[]): SourceGroup[] {
+const stateTier: Record<RunState, number> = {
+  failure: 0,
+  attention: 1,
+  canceled: 1,
+  queued: 2,
+  waiting: 2,
+  running: 2,
+  success: 3,
+  neutral: 3,
+  skipped: 3,
+  unknown: 4,
+};
+function latestTime(row: Workflow): number {
+  const time = row.latest_run ? Date.parse(row.latest_run.created_at) : NaN;
+  return Number.isNaN(time) ? -Infinity : time;
+}
+function byName(a: Workflow, b: Workflow): number {
+  return a.name.localeCompare(b.name) || a.key.localeCompare(b.key);
+}
+function workflowComparator(sort: SortMode): (a: Workflow, b: Workflow) => number {
+  if (sort === "failing")
+    return (a, b) =>
+      (a.latest_run ? stateTier[a.latest_run.state] : 4) -
+        (b.latest_run ? stateTier[b.latest_run.state] : 4) ||
+      latestTime(b) - latestTime(a) ||
+      byName(a, b);
+  if (sort === "newest") return (a, b) => latestTime(b) - latestTime(a) || byName(a, b);
+  return byName;
+}
+export function groupWorkflows(rows: Workflow[], sort: SortMode = ""): SourceGroup[] {
   const sources = new Map<string, Map<string, RepositoryGroup>>();
   for (const row of rows) {
     let repositories = sources.get(row.repository.source);
@@ -299,23 +332,28 @@ export function groupWorkflows(rows: Workflow[]): SourceGroup[] {
     }
     group.workflows.push(row);
   }
+  const compare = workflowComparator(sort);
+  // Repositories and sources rank by their best workflow, which sorts first.
+  const best = (group: RepositoryGroup) => group.workflows[0];
+  const byRepository = (a: RepositoryGroup, b: RepositoryGroup) =>
+    (sort ? compare(best(a), best(b)) : 0) ||
+    a.repository.full_name.localeCompare(b.repository.full_name) ||
+    a.repository.key.localeCompare(b.repository.key);
   return [...sources]
-    .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, repositories]) => ({
       name,
       repositories: [...repositories.values()]
-        .sort(
-          (a, b) =>
-            a.repository.full_name.localeCompare(b.repository.full_name) ||
-            a.repository.key.localeCompare(b.repository.key),
-        )
         .map((group) => ({
           repository: group.repository,
-          workflows: group.workflows.sort(
-            (a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key),
-          ),
-        })),
-    }));
+          workflows: [...group.workflows].sort(compare),
+        }))
+        .sort(byRepository),
+    }))
+    .sort(
+      (a, b) =>
+        (sort ? compare(best(a.repositories[0]), best(b.repositories[0])) : 0) ||
+        a.name.localeCompare(b.name),
+    );
 }
 
 export function formatDuration(ms: number | null): string {
@@ -339,12 +377,14 @@ export function sampleSuccess(runs: Run[]): { rate: number | null; eligible: num
 }
 export function readFilters(params: URLSearchParams): Filters {
   const status = params.get("status") ?? "";
+  const sort = params.get("sort") ?? "";
   return {
     search: params.get("q") ?? "",
     provider: params.get("provider") ?? "",
     source: params.get("source") ?? "",
     repository: params.get("repo") ?? "",
     status: states.includes(status as RunState) ? status : "",
+    sort: sortModes.find((mode) => mode === sort) ?? "",
   };
 }
 export function writeFilters(filters: Filters, previous = new URLSearchParams()): URLSearchParams {
@@ -355,6 +395,7 @@ export function writeFilters(filters: Filters, previous = new URLSearchParams())
     source: filters.source,
     repo: filters.repository,
     status: filters.status,
+    sort: filters.sort,
   })) {
     if (value) params.set(key, value);
     else params.delete(key);

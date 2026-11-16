@@ -141,6 +141,7 @@ test("combines text, provider, source, repository and latest status filters", ()
       source: "github",
       repository: "repo-1",
       status: "success",
+      sort: "",
     }).map((r) => r.key),
     ["row-1"],
   );
@@ -151,11 +152,12 @@ test("combines text, provider, source, repository and latest status filters", ()
       source: "",
       repository: "",
       status: "failure",
+      sort: "",
     }).length,
     1,
   );
   assert.equal(
-    filterWorkflows(rows, { search: "", provider: "", source: "", repository: "gone", status: "" })
+    filterWorkflows(rows, { search: "", provider: "", source: "", repository: "gone", status: "", sort: "" })
       .length,
     0,
   );
@@ -423,4 +425,97 @@ test("preserves verified workflow file presence and treats an older API as unkno
   const bad = overview();
   Object.assign(bad.workflows[0], { file_exists: "false" });
   assert.throws(() => parseOverview(bad));
+});
+
+const sortRow = (
+  key: string,
+  repoKey: string,
+  state: RunState | null,
+  created_at = "2026-10-14T12:00:00Z",
+  source = "github",
+): Workflow => ({
+  ...structuredClone(workflow),
+  key,
+  name: key,
+  repository: { ...repository, key: repoKey, full_name: `example/${repoKey}`, source },
+  latest_run: state ? { ...run, id: key, state, terminal: state !== "running", created_at } : null,
+});
+const layout = (groups: ci.SourceGroup[]) =>
+  groups.map((source) => [
+    source.name,
+    source.repositories.map((repo) => [repo.repository.key, repo.workflows.map((row) => row.key)]),
+  ]);
+
+test("sort is read from and written to the URL, ignoring unknown values", () => {
+  assert.equal(readFilters(new URLSearchParams("sort=failing")).sort, "failing");
+  assert.equal(readFilters(new URLSearchParams("sort=newest")).sort, "newest");
+  assert.equal(readFilters(new URLSearchParams("sort=bogus")).sort, "");
+  assert.equal(readFilters(new URLSearchParams()).sort, "");
+  const filters = readFilters(new URLSearchParams("sort=newest&other=keep"));
+  assert.equal(writeFilters(filters, new URLSearchParams("other=keep")).get("sort"), "newest");
+  assert.equal(
+    writeFilters({ ...filters, sort: "" }, new URLSearchParams("sort=newest")).has("sort"),
+    false,
+  );
+});
+
+test("failing first ranks failures, other non-success outcomes, running, success, then unknown", () => {
+  const rows = [
+    sortRow("w-success", "r1", "success", "2026-10-14T14:00:00Z"),
+    sortRow("w-none", "r1", null),
+    sortRow("w-running", "r1", "running", "2026-10-14T13:00:00Z"),
+    sortRow("w-canceled", "r1", "canceled", "2026-10-14T13:00:00Z"),
+    sortRow("w-old-fail", "r1", "failure", "2026-10-14T10:00:00Z"),
+    sortRow("w-new-fail", "r1", "failure", "2026-10-14T11:00:00Z"),
+  ];
+  const [[, repos]] = layout(ci.groupWorkflows(rows, "failing")) as [[string, [[string, string[]]]]];
+  assert.deepEqual(repos[0][1], [
+    "w-new-fail",
+    "w-old-fail",
+    "w-canceled",
+    "w-running",
+    "w-success",
+    "w-none",
+  ]);
+});
+
+test("failing first orders repositories and sources by their worst workflow", () => {
+  const rows = [
+    sortRow("a-ok", "alpha", "success", "2026-10-14T15:00:00Z"),
+    sortRow("b-ok", "beta", "success"),
+    sortRow("b-bad", "beta", "failure"),
+    sortRow("f-ok", "fjord", "success", "2026-10-14T15:00:00Z", "forgejo"),
+  ];
+  assert.deepEqual(layout(ci.groupWorkflows(rows, "failing")), [
+    ["github", [["beta", ["b-bad", "b-ok"]], ["alpha", ["a-ok"]]]],
+    ["forgejo", [["fjord", ["f-ok"]]]],
+  ]);
+});
+
+test("newest run orders by latest run time with missing runs last and name as tie-break", () => {
+  const rows = [
+    sortRow("old", "alpha", "failure", "2026-10-14T09:00:00Z"),
+    sortRow("none", "beta", null),
+    sortRow("new", "beta", "success", "2026-10-14T18:00:00Z"),
+    sortRow("tie-b", "gamma", "success", "2026-10-14T12:00:00Z"),
+    sortRow("tie-a", "gamma", "success", "2026-10-14T12:00:00Z"),
+  ];
+  assert.deepEqual(layout(ci.groupWorkflows(rows, "newest")), [
+    [
+      "github",
+      [
+        ["beta", ["new", "none"]],
+        ["gamma", ["tie-a", "tie-b"]],
+        ["alpha", ["old"]],
+      ],
+    ],
+  ]);
+});
+
+test("name sort is the default and unchanged", () => {
+  const rows = [sortRow("b", "beta", "failure"), sortRow("a", "alpha", "success")];
+  assert.deepEqual(layout(ci.groupWorkflows(rows)), layout(ci.groupWorkflows(rows, "")));
+  assert.deepEqual(layout(ci.groupWorkflows(rows)), [
+    ["github", [["alpha", ["a"]], ["beta", ["b"]]]],
+  ]);
 });
