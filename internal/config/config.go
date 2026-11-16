@@ -1,6 +1,7 @@
 package config
 
 import (
+	"ciview/internal/ci"
 	"errors"
 	"fmt"
 	"net/url"
@@ -25,7 +26,7 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("open configuration: %w", err)
 	}
 	defer file.Close()
-	cfg := Config{Viewer: Viewer{RefreshInterval: "60s", DiscoveryInterval: "15m", HistoryRuns: 30, HistoryPages: 5, Branch: "default"}}
+	cfg := Config{Viewer: Viewer{RefreshInterval: "60s", DiscoveryInterval: "15m", RunnerInterval: "1m", HistoryRuns: 30, HistoryPages: 5, Branch: "default"}}
 	decoder := toml.NewDecoder(file).DisallowUnknownFields()
 	if err := decoder.Decode(&cfg); err != nil {
 		var unknown *toml.StrictMissingError
@@ -116,6 +117,45 @@ func (c Config) Validate() error {
 		}
 		if source.TokenFile != "" && strings.TrimSpace(source.TokenFile) == "" {
 			return fmt.Errorf("%s.token_file must not be blank", label)
+		}
+	}
+	return c.validateRunners()
+}
+
+func (c Config) validateRunners() error {
+	if len(c.Runners) == 0 {
+		return nil
+	}
+	if err := validInterval("runner_interval", c.Viewer.RunnerInterval); err != nil {
+		return err
+	}
+	providers := make(map[string]string, len(c.Sources))
+	for _, source := range c.Sources {
+		providers[strings.ToLower(strings.TrimSpace(source.Name))] = source.Provider
+	}
+	seen := make(map[string]bool, len(c.Runners))
+	for i, runner := range c.Runners {
+		label := fmt.Sprintf("runners[%d]", i)
+		provider, found := providers[strings.ToLower(strings.TrimSpace(runner.Source))]
+		if !found {
+			return fmt.Errorf("%s.source must name a configured source", label)
+		}
+		if provider != "github" {
+			return fmt.Errorf("%s.source must be a github source", label)
+		}
+		if _, err := ci.ParseRunnerScope(runner.Scope); err != nil {
+			return fmt.Errorf("%s.scope must be org:<name> or repo:<owner>/<name>", label)
+		}
+		key := strings.ToLower(runner.Source) + "|" + strings.ToLower(runner.Scope)
+		if seen[key] {
+			return fmt.Errorf("duplicate runner scope %q", runner.Scope)
+		}
+		seen[key] = true
+		if runner.TokenEnv != "" && runner.TokenFile != "" {
+			return fmt.Errorf("%s must use only one credential reference", label)
+		}
+		if runner.TokenEnv != "" && !envName.MatchString(runner.TokenEnv) {
+			return fmt.Errorf("%s.token_env must name an environment variable", label)
 		}
 	}
 	return nil

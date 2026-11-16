@@ -4,6 +4,7 @@
   import { Button, EmptyState, SearchInput, SelectDropdown, ThemeToggle } from "@kenn-io/kit-ui";
   import WorkflowRow from "$lib/components/ci/WorkflowRow.svelte";
   import SourceNotices from "$lib/components/ci/SourceNotices.svelte";
+  import RunnerPanel from "$lib/components/ci/RunnerPanel.svelte";
   import {
     parseOverview,
     filterWorkflows,
@@ -293,5 +294,6 @@
         />
       </div>{/if}
   </section>
+  {#if overview?.runners.length}<RunnerPanel scopes={overview.runners} {now} />{/if}
   {#if overview}<SourceNotices sources={overview.sources} />{/if}
 </main>

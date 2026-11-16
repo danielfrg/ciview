@@ -22,6 +22,14 @@ repos = ["actions/checkout"]
 # users = ["example-user"]
 # repos = ["example-owner/example-private-repository"]
 
+# Watch self-hosted GitHub runners. The token needs runner read access: repository
+# Administration read for repo scopes, "Self-hosted runners: read" for org scopes.
+# [viewer] runner_interval = "1m" sets how often runners are read.
+# [[runners]]
+# source = "github"
+# scope = "org:example-org"          # or "repo:example-owner/example-repo"
+# token_env = "CIVIEW_RUNNERS_TOKEN" # optional; defaults to the source token
+
 # Add named Forgejo instances as separate sources. base_url is the instance root.
 # [[sources]]
 # name = "forgejo"

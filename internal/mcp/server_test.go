@@ -35,7 +35,7 @@ func TestCachedTools(t *testing.T) {
 		issues[i] = ci.Issue{Kind: "unavailable", Message: "secret raw error"}
 	}
 	value := ci.Overview{GeneratedAt: now, PollIntervalSeconds: 30, Sources: []ci.SourceState{{Name: "git", State: "unavailable", Issues: issues}}, Workflows: []ci.Workflow{{Key: "b", Name: "Build", Repository: ci.Repository{Source: "git", Provider: "github", FullName: "owner/repo"}, LatestRun: &runs[0], Runs: runs, Coverage: ci.Coverage{Partial: true, FetchedRuns: 9}, Health: ci.Health{State: "stale", Message: "secret raw error"}}, {Key: "a", Name: "Other"}}}
-	s := session(t, NewHandler(reader{value: value}, nil), 4)
+	s := session(t, NewHandler(reader{value: value}, nil), 5)
 	out := call(t, s, "list_workflows", map[string]any{"query": "BUILD", "provider": "github", "source": "git", "repository": "owner/repo", "status": "success", "limit": 1}, false)
 	if out["total"] != float64(1) || out["generated_at"] == nil {
 		t.Fatal(out)
@@ -73,7 +73,7 @@ func TestCachedTools(t *testing.T) {
 	if value.Workflows[0].Runs[0].ID != "0" || value.Workflows[0].Health.Message != "secret raw error" {
 		t.Fatal("snapshot mutated")
 	}
-	bad := session(t, NewHandler(reader{err: errors.New("secret")}, nil), 4)
+	bad := session(t, NewHandler(reader{err: errors.New("secret")}, nil), 5)
 	call(t, bad, "get_source_status", map[string]any{}, true)
 }
 
@@ -86,7 +86,7 @@ func (r blockingReader) Overview(ctx context.Context) (ci.Overview, error) {
 }
 func TestRequestCancellation(t *testing.T) {
 	canceled := make(chan struct{})
-	s := session(t, NewHandler(blockingReader{canceled}, nil), 4)
+	s := session(t, NewHandler(blockingReader{canceled}, nil), 5)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	_, err := s.CallTool(ctx, &sdk.CallToolParams{Name: "get_source_status", Arguments: map[string]any{}})
@@ -102,7 +102,7 @@ func TestRequestCancellation(t *testing.T) {
 
 func TestSearchMatchesUIWordsAndFields(t *testing.T) {
 	value := ci.Overview{Workflows: []ci.Workflow{{Key: "build", Name: "Build", Repository: ci.Repository{Source: "work", Provider: "github", FullName: "owner/repo"}}}}
-	s := session(t, NewHandler(reader{value: value}, nil), 4)
+	s := session(t, NewHandler(reader{value: value}, nil), 5)
 	for _, query := range []string{" github   Build ", "owner/repo Build", "work github", "Build missing"} {
 		out := call(t, s, "list_workflows", map[string]any{"query": query}, false)
 		want := float64(1)
@@ -112,5 +112,46 @@ func TestSearchMatchesUIWordsAndFields(t *testing.T) {
 		if out["total"] != want {
 			t.Errorf("query %q total %v want %v", query, out["total"], want)
 		}
+	}
+}
+
+func TestListRunnersReadsCachedStateWithScopeStatus(t *testing.T) {
+	now := time.Now().UTC()
+	value := ci.Overview{GeneratedAt: now, PollIntervalSeconds: 30, Runners: []ci.RunnerScope{
+		{Scope: "org:acme", Source: "github", State: "healthy", AsOf: &now, Runners: []ci.Runner{
+			{ID: "2", Name: "b", Status: "offline", Labels: []string{"ops"}},
+			{ID: "1", Name: "a", Status: "online", Busy: true, Version: "2.338.2", Labels: []string{"ops"}},
+		}},
+		{Scope: "repo:acme/app", Source: "github", State: "unavailable", Kind: "permission", Message: "The token cannot list runners for this scope"},
+	}}
+	s := session(t, NewHandler(reader{value: value}, nil), 5)
+	out := call(t, s, "list_runners", map[string]any{}, false)
+	rows := out["runners"].([]any)
+	if out["total"] != float64(2) || len(rows) != 2 || out["generated_at"] == nil {
+		t.Fatal(out)
+	}
+	first := rows[0].(map[string]any)
+	if first["name"] != "a" || first["scope"] != "org:acme" || first["busy"] != true || first["version"] != "2.338.2" || first["scope_state"] != "healthy" {
+		t.Fatal(first)
+	}
+	scopes := out["scopes"].([]any)
+	denied := scopes[1].(map[string]any)
+	if len(scopes) != 2 || denied["state"] != "unavailable" || denied["kind"] != "permission" || denied["runner_count"] != float64(0) {
+		t.Fatal(scopes)
+	}
+	offline := call(t, s, "list_runners", map[string]any{"status": "offline"}, false)["runners"].([]any)
+	if len(offline) != 1 || offline[0].(map[string]any)["name"] != "b" {
+		t.Fatal(offline)
+	}
+	scoped := call(t, s, "list_runners", map[string]any{"scope": "repo:acme/app"}, false)
+	if scoped["total"] != float64(0) || len(scoped["scopes"].([]any)) != 1 {
+		t.Fatal(scoped)
+	}
+	call(t, s, "list_runners", map[string]any{"scope": "org:missing"}, true)
+	call(t, s, "list_runners", map[string]any{"status": "sleeping"}, true)
+	call(t, s, "list_runners", map[string]any{"limit": 0}, true)
+	empty := session(t, NewHandler(reader{value: ci.Overview{GeneratedAt: now}}, nil), 5)
+	if got := call(t, empty, "list_runners", map[string]any{}, false); got["total"] != float64(0) || len(got["runners"].([]any)) != 0 || len(got["scopes"].([]any)) != 0 {
+		t.Fatal(got)
 	}
 }

@@ -178,6 +178,7 @@ type Workflow struct {
 type Overview struct {
 	Workflows           []Workflow    `json:"workflows"`
 	Sources             []SourceState `json:"sources"`
+	Runners             []RunnerScope `json:"runners"`
 	GeneratedAt         time.Time     `json:"generated_at"`
 	PollIntervalSeconds int           `json:"poll_interval_seconds"`
 }
@@ -243,5 +244,6 @@ func (v Overview) MarshalJSON() ([]byte, error) {
 	type plain Overview
 	v.Workflows = nonNil(v.Workflows)
 	v.Sources = nonNil(v.Sources)
+	v.Runners = nonNil(v.Runners)
 	return json.Marshal(plain(v))
 }

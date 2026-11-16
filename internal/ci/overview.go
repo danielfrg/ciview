@@ -16,10 +16,17 @@ type OverviewService struct {
 	historyRuns     int
 	branch          string
 	refreshInterval time.Duration
+	runners         RunnerReader
 }
 
 func NewOverview(store SnapshotStore, inventory InventoryReader, historyRuns int, branch string, refreshInterval time.Duration) *OverviewService {
 	return &OverviewService{store: store, inventory: inventory, historyRuns: historyRuns, branch: branch, refreshInterval: refreshInterval}
+}
+
+// WithRunners adds cached runner state to the overview.
+func (s *OverviewService) WithRunners(runners RunnerReader) *OverviewService {
+	s.runners = runners
+	return s
 }
 
 func (s *OverviewService) Overview(ctx context.Context) (Overview, error) {
@@ -28,6 +35,13 @@ func (s *OverviewService) Overview(ctx context.Context) (Overview, error) {
 		return Overview{}, err
 	}
 	result := Overview{Workflows: make([]Workflow, 0), Sources: make([]SourceState, 0, len(inventory.Sources)), GeneratedAt: time.Now().UTC(), PollIntervalSeconds: int(s.refreshInterval / time.Second)}
+	if s.runners != nil {
+		runners, err := s.runners.Runners(ctx)
+		if err != nil {
+			return Overview{}, err
+		}
+		result.Runners = runners
+	}
 	seen := make(map[RepositoryKey]bool)
 	for _, source := range inventory.Sources {
 		state := source

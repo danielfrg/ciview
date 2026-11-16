@@ -95,6 +95,40 @@ type SourcesOutput struct {
 	NextOffset *int     `json:"next_offset"`
 }
 
+type RunnersInput struct {
+	Paging
+	Scope  string `json:"scope,omitempty" jsonschema:"Exact runner scope, such as org:name or repo:owner/name"`
+	Status string `json:"status,omitempty" jsonschema:"online or offline"`
+}
+type RunnerRow struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	OS         string     `json:"os"`
+	Status     string     `json:"status"`
+	Busy       bool       `json:"busy"`
+	Labels     []string   `json:"labels"`
+	Version    string     `json:"version"`
+	Scope      string     `json:"scope"`
+	ScopeState string     `json:"scope_state"`
+	AsOf       *time.Time `json:"as_of"`
+}
+type RunnerScopeStatus struct {
+	Scope       string     `json:"scope"`
+	Source      string     `json:"source"`
+	State       string     `json:"state"`
+	Kind        string     `json:"kind"`
+	Message     string     `json:"message"`
+	AsOf        *time.Time `json:"as_of"`
+	RunnerCount int        `json:"runner_count"`
+}
+type RunnersOutput struct {
+	Freshness
+	Runners    []RunnerRow         `json:"runners"`
+	Scopes     []RunnerScopeStatus `json:"scopes"`
+	Total      int                 `json:"total"`
+	NextOffset *int                `json:"next_offset"`
+}
+
 func freshness(v ci.Overview) Freshness { return Freshness{v.GeneratedAt, v.PollIntervalSeconds} }
 func find(v ci.Overview, key string) (ci.Workflow, error) {
 	for _, w := range v.Workflows {
@@ -230,6 +264,50 @@ func NewHandler(reader ci.OverviewReader, hosts []string) http.Handler {
 			}
 			out.Sources = append(out.Sources, Source{s.Name, s.Provider, s.State, len(s.Repositories), issues, len(s.Issues) > 20, s.LastDiscoveryAt})
 		}
+		return nil, out, nil
+	})
+	sdk.AddTool(server, &sdk.Tool{Name: "list_runners", Description: "Read cached self-hosted runner status: online or offline, busy, labels and version, with per-scope freshness. State stale means the last read failed and rows are from an earlier read; unavailable means no read has succeeded. Does not contact the provider.", Annotations: annotation()}, func(ctx context.Context, _ *sdk.CallToolRequest, in RunnersInput) (*sdk.CallToolResult, RunnersOutput, error) {
+		out := RunnersOutput{Runners: []RunnerRow{}, Scopes: []RunnerScopeStatus{}}
+		if _, _, _, err := in.Paging.bounds(0); err != nil {
+			return nil, out, err
+		}
+		if in.Status != "" && in.Status != "online" && in.Status != "offline" {
+			return nil, out, errors.New("status must be online or offline")
+		}
+		v, e := read(ctx)
+		if e != nil {
+			return nil, out, e
+		}
+		out.Freshness = freshness(v)
+		scopes := []ci.RunnerScope{}
+		for _, scope := range v.Runners {
+			if in.Scope == "" || scope.Scope == in.Scope {
+				scopes = append(scopes, scope)
+			}
+		}
+		if in.Scope != "" && len(scopes) == 0 {
+			return nil, out, errors.New("Runner scope not found")
+		}
+		sort.SliceStable(scopes, func(i, j int) bool { return scopes[i].Scope < scopes[j].Scope })
+		rows := []RunnerRow{}
+		for _, scope := range scopes {
+			out.Scopes = append(out.Scopes, RunnerScopeStatus{scope.Scope, scope.Source, scope.State, scope.Kind, scope.Message, scope.AsOf, len(scope.Runners)})
+			for _, runner := range scope.Runners {
+				if in.Status == "" || runner.Status == in.Status {
+					rows = append(rows, RunnerRow{runner.ID, runner.Name, runner.OS, runner.Status, runner.Busy, append([]string{}, runner.Labels...), runner.Version, scope.Scope, scope.State, scope.AsOf})
+				}
+			}
+		}
+		sort.SliceStable(rows, func(i, j int) bool {
+			if rows[i].Scope != rows[j].Scope {
+				return rows[i].Scope < rows[j].Scope
+			}
+			return rows[i].Name < rows[j].Name
+		})
+		a, b, next, _ := in.Paging.bounds(len(rows))
+		out.Total = len(rows)
+		out.NextOffset = next
+		out.Runners = rows[a:b]
 		return nil, out, nil
 	})
 	return transport(server, hosts)

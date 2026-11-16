@@ -230,3 +230,51 @@ show_dependabot_updates="false"
 		t.Fatal("non-boolean show_dependabot_updates accepted")
 	}
 }
+
+func TestRunnerScopesLoadAndDefaultInterval(t *testing.T) {
+	cfg, err := Load(writeConfig(t, "[[sources]]\nname='gh'\nprovider='github'\nrepos=['acme/app']\n[[runners]]\nsource='gh'\nscope='org:acme'\n[[runners]]\nsource='gh'\nscope='repo:acme/app'\ntoken_env='RUNNER_READ_TOKEN'\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Viewer.RunnerDuration() != time.Minute || len(cfg.Runners) != 2 || cfg.Runners[1].TokenEnv != "RUNNER_READ_TOKEN" {
+		t.Fatalf("runners=%+v viewer=%+v", cfg.Runners, cfg.Viewer)
+	}
+	custom, err := Load(writeConfig(t, "[viewer]\nrunner_interval='30s'\n[[sources]]\nname='gh'\nprovider='github'\nrepos=['acme/app']\n"))
+	if err != nil || custom.Viewer.RunnerDuration() != 30*time.Second || len(custom.Runners) != 0 {
+		t.Fatalf("custom=%+v err=%v", custom, err)
+	}
+}
+
+func TestValidateRejectsMalformedRunnerScopes(t *testing.T) {
+	base := func() Config {
+		return Config{
+			Viewer:  Viewer{RefreshInterval: "60s", DiscoveryInterval: "15m", RunnerInterval: "1m", HistoryRuns: 30, HistoryPages: 5, Branch: "default"},
+			Sources: []Source{{Name: "gh", Provider: "github", Repos: []string{"acme/app"}}, {Name: "fj", Provider: "forgejo", BaseURL: "https://forge.example.test", Repos: []string{"acme/app"}}},
+			Runners: []RunnerScope{{Source: "gh", Scope: "org:acme"}},
+		}
+	}
+	if err := base().Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for name, mutate := range map[string]func(*Config){
+		"unknown source":       func(c *Config) { c.Runners[0].Source = "missing" },
+		"forgejo source":       func(c *Config) { c.Runners[0].Source = "fj" },
+		"bad scope":            func(c *Config) { c.Runners[0].Scope = "acme" },
+		"duplicate scope":      func(c *Config) { c.Runners = append(c.Runners, c.Runners[0]) },
+		"both credentials":     func(c *Config) { c.Runners[0].TokenEnv, c.Runners[0].TokenFile = "A", "/x" },
+		"bad token env":        func(c *Config) { c.Runners[0].TokenEnv = "bad name" },
+		"short interval":       func(c *Config) { c.Viewer.RunnerInterval = "1s" },
+		"unparseable interval": func(c *Config) { c.Viewer.RunnerInterval = "soon" },
+	} {
+		c := base()
+		mutate(&c)
+		if err := c.Validate(); err == nil {
+			t.Errorf("%s accepted", name)
+		}
+	}
+	legacy := base()
+	legacy.Viewer.RunnerInterval, legacy.Runners = "", nil
+	if err := legacy.Validate(); err != nil {
+		t.Fatalf("configs without runners need no runner_interval: %v", err)
+	}
+}

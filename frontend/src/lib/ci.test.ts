@@ -522,3 +522,74 @@ test("name sort stays alphabetical regardless of run times", () => {
     ["github", [["alpha", ["a"]], ["beta", ["b"]]]],
   ]);
 });
+
+const runnerScope = () => ({
+  scope: "org:acme",
+  source: "github",
+  state: "healthy",
+  kind: "",
+  message: "",
+  as_of: "2026-10-14T12:00:00Z",
+  last_attempt_at: "2026-10-14T12:00:00Z",
+  runners: [
+    {
+      id: "7",
+      name: "ops-1",
+      os: "Linux",
+      status: "online" as "online" | "offline",
+      busy: true,
+      labels: ["self-hosted", "ops"],
+      version: "2.338.2",
+    },
+  ],
+});
+
+test("parses runner scopes and treats a missing runners field as none", () => {
+  const withRunners = { ...overview(), runners: [runnerScope()] };
+  const parsed = parseOverview(withRunners);
+  assert.equal(parsed.runners[0].runners[0].name, "ops-1");
+  assert.equal(parsed.runners[0].as_of, "2026-10-14T12:00:00Z");
+  assert.deepEqual(parseOverview(overview()).runners, []);
+  const unread = { ...runnerScope(), state: "unavailable", as_of: null, last_attempt_at: null, runners: [] };
+  assert.equal(parseOverview({ ...overview(), runners: [unread] }).runners[0].as_of, null);
+});
+
+test("rejects malformed runner data", () => {
+  const bad = (change: (scope: ReturnType<typeof runnerScope>) => void) => {
+    const scope = runnerScope();
+    change(scope);
+    assert.throws(() => parseOverview({ ...overview(), runners: [scope] }));
+  };
+  bad((s) => (s.runners[0].status = "sleeping" as "online"));
+  bad((s) => (s.runners[0].busy = "yes" as unknown as boolean));
+  bad((s) => (s.runners[0].id = ""));
+  bad((s) => s.runners.push(structuredClone(s.runners[0])));
+  bad((s) => (s.as_of = "yesterday"));
+  assert.throws(() => parseOverview({ ...overview(), runners: [runnerScope(), runnerScope()] }));
+});
+
+test("runner labels keep online, busy and offline distinct and tones downgrade stale scopes", () => {
+  const online = { ...runnerScope().runners[0], status: "online" as "online" | "offline" };
+  assert.equal(ci.runnerLabel({ ...online, busy: true }), "Online · busy");
+  assert.equal(ci.runnerLabel({ ...online, busy: false }), "Online · idle");
+  assert.equal(ci.runnerLabel({ ...online, status: "offline" }), "Offline");
+  assert.equal(ci.runnerLabel({ ...online, busy: false }), "Online · idle");
+  assert.equal(ci.runnerTone({ ...online, busy: false }, "healthy"), "success");
+  assert.equal(ci.runnerTone({ ...online, busy: true }, "healthy"), "info");
+  assert.equal(ci.runnerTone({ ...online, status: "offline" }, "healthy"), "danger");
+  assert.equal(ci.runnerTone({ ...online, status: "offline" }, "stale"), "neutral");
+});
+
+test("runner scope notices describe stale and unavailable reads only", () => {
+  const scope = (state: string, message = "") => ({ ...runnerScope(), state, message });
+  assert.equal(ci.runnerScopeNotice(scope("healthy")), null);
+  assert.equal(ci.runnerScopeNotice(scope("loading")), "Loading runners");
+  assert.equal(
+    ci.runnerScopeNotice(scope("stale", "The token cannot list runners for this scope")),
+    "Stale data · The token cannot list runners for this scope",
+  );
+  assert.equal(
+    ci.runnerScopeNotice(scope("unavailable", "Runners could not be read")),
+    "Runners unavailable · Runners could not be read",
+  );
+});

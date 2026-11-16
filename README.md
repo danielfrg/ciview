@@ -47,15 +47,40 @@ survive reloads and browser navigation. Workflow titles open provider history;
 run bars and status links open the exact run. Hover or focus a bar for details.
 Refresh reloads the cached overview; the server schedules upstream collection.
 
+When `[[runners]]` scopes are configured, a Runners panel lists each
+self-hosted runner as online or offline, busy or idle, with labels, version and
+when it was last read. See [Runners](#runners).
+
 Provider failures retain useful rows and identify stale or incomplete data.
 Source notices explain collection issues. CI View does not trigger or cancel
 runs. API documentation is at `/api/docs`.
 
+### Runners
+
+Add one `[[runners]]` block per GitHub organization or repository whose
+self-hosted runners you want to watch. Runners are read every
+`viewer.runner_interval` (default `1m`), separately from workflow collection.
+
+```toml
+[[runners]]
+source = "github"            # a configured GitHub source
+scope = "org:example-org"    # or "repo:example-owner/example-repo"
+# token_env = "CIVIEW_RUNNERS_TOKEN"   # optional; defaults to the source token
+```
+
+Listing runners needs more than Actions read access: a repository scope needs
+repository Administration read (classic `repo`), and an organization scope needs
+"Self-hosted runners: read" (classic `admin:org`). A fine-grained token covers
+one owner, so use `token_env` or `token_file` per scope when scopes span owners.
+A scope the token cannot read shows a notice and never an empty or offline list;
+if a later read fails, the last runners stay visible marked stale. Forgejo
+runners are not read.
+
 ### MCP
 
 Agents can read cached CI state through the MCP endpoint at `/mcp`
-(Streamable HTTP). Tools: `list_workflows`, `get_workflow`, `list_runs`, and
-`get_source_status`. All tools read cached state without triggering upstream
+(Streamable HTTP). Tools: `list_workflows`, `get_workflow`, `list_runs`,
+`get_source_status`, and `list_runners`. All tools read cached state without triggering upstream
 collection; no run triggering, cancellation, or logs are exposed. List tools
 accept `limit` (default 20, maximum 100) and nonnegative `offset`.
 

@@ -74,9 +74,29 @@ export type Source = {
   issues: { repository: string; kind: string; message: string }[];
   last_discovery_at: string | null;
 };
+export type Runner = {
+  id: string;
+  name: string;
+  os: string;
+  status: "online" | "offline";
+  busy: boolean;
+  labels: string[];
+  version: string;
+};
+export type RunnerScope = {
+  scope: string;
+  source: string;
+  state: string;
+  kind: string;
+  message: string;
+  as_of: string | null;
+  last_attempt_at: string | null;
+  runners: Runner[];
+};
 export type Overview = {
   workflows: Workflow[];
   sources: Source[];
+  runners: RunnerScope[];
   generated_at: string;
   poll_interval_seconds: number;
 };
@@ -209,6 +229,35 @@ function workflow(v: unknown): Workflow {
     },
   };
 }
+function runnerScope(v: unknown): RunnerScope {
+  const o = object(v);
+  return {
+    scope: identity(o.scope),
+    source: string(o.source),
+    state: string(o.state),
+    kind: string(o.kind),
+    message: string(o.message),
+    as_of: nullable(o.as_of, date),
+    last_attempt_at: nullable(o.last_attempt_at, date),
+    runners: unique(
+      list(o.runners, (v) => {
+        const r = object(v);
+        const status = string(r.status);
+        if (status !== "online" && status !== "offline") fail();
+        return {
+          id: identity(r.id),
+          name: identity(r.name),
+          os: string(r.os),
+          status,
+          busy: bool(r.busy),
+          labels: list(r.labels, string),
+          version: string(r.version),
+        };
+      }),
+      (item) => item.id,
+    ),
+  };
+}
 export function parseOverview(v: unknown): Overview {
   const o = object(v);
   const interval = integer(o.poll_interval_seconds);
@@ -235,6 +284,9 @@ export function parseOverview(v: unknown): Overview {
         };
       }),
       (item) => item.name,
+    ),
+    runners: unique(o.runners === undefined ? [] : list(o.runners, runnerScope), (item) =>
+      JSON.stringify([item.source, item.scope]),
     ),
     generated_at: date(o.generated_at),
     poll_interval_seconds: interval,
@@ -401,6 +453,24 @@ export function writeFilters(filters: Filters, previous = new URLSearchParams())
     else params.delete(key);
   }
   return params;
+}
+export function runnerLabel(runner: Runner): string {
+  return runner.status === "offline" ? "Offline" : runner.busy ? "Online · busy" : "Online · idle";
+}
+// A runner from a scope whose last read failed is shown without status color.
+export function runnerTone(
+  runner: Runner,
+  scopeState: string,
+): "success" | "info" | "danger" | "neutral" {
+  if (scopeState !== "healthy" && scopeState !== "ok") return "neutral";
+  return runner.status === "offline" ? "danger" : runner.busy ? "info" : "success";
+}
+export function runnerScopeNotice(scope: RunnerScope): string | null {
+  const detail = scope.message ? ` · ${scope.message}` : "";
+  if (scope.state === "healthy" || scope.state === "ok") return null;
+  if (scope.state === "loading") return "Loading runners";
+  if (scope.state === "stale") return `Stale data${detail}`;
+  return `Runners unavailable${detail}`;
 }
 export function statusLabel(state: RunState): string {
   return {

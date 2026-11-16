@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -70,6 +71,13 @@ func run(ctx context.Context, path, addr string) error {
 	store := snapshots.NewMemory()
 	coordinator := refresh.New(cfg, providers, store)
 	overview := ci.NewOverview(store, coordinator, cfg.Viewer.HistoryRuns, cfg.Viewer.Branch, cfg.Viewer.RefreshDuration())
+	collector, err := runnerCollector(cfg, providers, client)
+	if err != nil {
+		return err
+	}
+	if collector != nil {
+		overview.WithRunners(collector)
+	}
 	server := &http.Server{Addr: addr, Handler: httpapi.NewHandler(web.Assets(), overview, hosts...), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -78,7 +86,16 @@ func run(ctx context.Context, path, addr string) error {
 	refreshCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	refreshed := make(chan struct{})
-	go func() { coordinator.Start(refreshCtx); close(refreshed) }()
+	go func() {
+		var wg sync.WaitGroup
+		if collector != nil {
+			wg.Add(1)
+			go func() { defer wg.Done(); collector.Start(refreshCtx) }()
+		}
+		coordinator.Start(refreshCtx)
+		wg.Wait()
+		close(refreshed)
+	}()
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	var serveErr error
