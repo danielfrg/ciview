@@ -74,6 +74,9 @@ export type Source = {
   issues: { repository: string; kind: string; message: string }[];
   last_discovery_at: string | null;
 };
+// Not provided by the API yet: the runner's current job, and a newer actions/runner release.
+export type RunnerJob = { title: string; url: string; started_at: string };
+export type RunnerUpdate = { latest: string; missing_since: string; overdue: boolean };
 export type Runner = {
   id: string;
   name: string;
@@ -82,7 +85,22 @@ export type Runner = {
   busy: boolean;
   labels: string[];
   version: string;
+  job?: RunnerJob;
+  update?: RunnerUpdate;
 };
+// Not provided by the API yet: running and queued runs, with why a queued run is waiting.
+export type ActivityItem = {
+  key: string;
+  repository: string;
+  workflow: string;
+  branch: string;
+  url: string;
+  since: string;
+  pool: "self-hosted" | "github-hosted" | null;
+  runner: string | null;
+  hint: { tone: "warning" | "info"; text: string } | null;
+};
+export type Activity = { running: ActivityItem[]; queued: ActivityItem[] };
 export type RunnerScope = {
   scope: string;
   source: string;
@@ -522,4 +540,170 @@ export function sourceNotices(sources: Source[]): Source[] {
     .filter(
       (source) => source.issues.length > 0 || (source.state !== "healthy" && source.state !== "ok"),
     );
+}
+
+const readable = (state: string) => state === "healthy" || state === "ok";
+export type RunnerCounts = {
+  total: number;
+  working: number;
+  idle: number;
+  offline: number;
+  unknown: number;
+  unreadScopes: number;
+};
+// Only fully readable scopes are trusted for busy, idle and offline; the runners of a
+// stale scope count as unknown, and a scope with no successful read has none to count.
+export function runnerCounts(scopes: RunnerScope[]): RunnerCounts {
+  const counts: RunnerCounts = { total: 0, working: 0, idle: 0, offline: 0, unknown: 0, unreadScopes: 0 };
+  for (const scope of scopes) {
+    counts.total += scope.runners.length;
+    if (!readable(scope.state)) {
+      counts.unknown += scope.runners.length;
+      if (scope.state !== "loading") counts.unreadScopes++;
+      continue;
+    }
+    for (const runner of scope.runners) {
+      if (runner.status === "offline") counts.offline++;
+      else if (runner.busy) counts.working++;
+      else counts.idle++;
+    }
+  }
+  return counts;
+}
+export type WorkflowCounts = {
+  total: number;
+  failing: number;
+  running: number;
+  queued: number;
+  passing: number;
+  other: number;
+};
+export function workflowCounts(rows: Workflow[]): WorkflowCounts {
+  const counts: WorkflowCounts = { total: rows.length, failing: 0, running: 0, queued: 0, passing: 0, other: 0 };
+  for (const row of rows) {
+    const state = row.latest_run?.state;
+    if (state === "failure") counts.failing++;
+    else if (state === "running") counts.running++;
+    else if (state === "queued" || state === "waiting") counts.queued++;
+    else if (state === "success") counts.passing++;
+    else counts.other++;
+  }
+  return counts;
+}
+// Running and queued runs seen as each workflow's latest run. The runner, pool and queue
+// reason need job data the API does not collect yet, so they stay empty.
+export function activityFromWorkflows(rows: Workflow[]): Activity {
+  const running: ActivityItem[] = [];
+  const queued: ActivityItem[] = [];
+  for (const row of rows) {
+    const latest = row.latest_run;
+    if (!latest || (latest.state !== "running" && latest.state !== "queued" && latest.state !== "waiting"))
+      continue;
+    const item: ActivityItem = {
+      key: row.key,
+      repository: row.repository.full_name,
+      workflow: row.name,
+      branch: latest.branch,
+      url: latest.url,
+      since: latest.state === "running" ? (latest.started_at ?? latest.created_at) : latest.created_at,
+      pool: null,
+      runner: null,
+      hint: null,
+    };
+    (latest.state === "running" ? running : queued).push(item);
+  }
+  const oldest = (a: ActivityItem, b: ActivityItem) =>
+    Date.parse(a.since) - Date.parse(b.since) || a.key.localeCompare(b.key);
+  return { running: running.sort(oldest), queued: queued.sort(oldest) };
+}
+export type Alert = {
+  key: string;
+  tone: "danger" | "warning";
+  kind: string;
+  title: string;
+  detail: string;
+  href: string | null;
+  since: string | null;
+};
+export function overviewAlerts(input: {
+  workflows: Workflow[];
+  sources: Source[];
+  runners: RunnerScope[];
+  activity: Activity;
+}): Alert[] {
+  const alerts: Alert[] = [];
+  for (const scope of input.runners)
+    if (readable(scope.state))
+      for (const runner of scope.runners)
+        if (runner.status === "offline")
+          alerts.push({
+            key: `offline:${scope.scope}:${runner.id}`,
+            tone: "danger",
+            kind: "Offline",
+            title: runner.name,
+            detail: `Offline per GitHub · ${scope.scope}`,
+            href: null,
+            since: null,
+          });
+  for (const item of input.activity.queued)
+    if (item.hint?.tone === "warning")
+      alerts.push({
+        key: `queued:${item.key}`,
+        tone: "warning",
+        kind: "Queued",
+        title: `${item.repository} - ${item.workflow}`,
+        detail: item.hint.text,
+        href: safeURL(item.url),
+        since: item.since,
+      });
+  const failing = input.workflows
+    .filter((row) => row.latest_run?.state === "failure")
+    .sort((a, b) => Date.parse(b.latest_run!.created_at) - Date.parse(a.latest_run!.created_at));
+  for (const row of failing)
+    alerts.push({
+      key: `failing:${row.key}`,
+      tone: "danger",
+      kind: "Failing",
+      title: `${row.repository.full_name} - ${row.name}`,
+      detail: "Latest run failed",
+      href: safeURL(row.latest_run!.url),
+      since: row.latest_run!.created_at,
+    });
+  for (const scope of input.runners)
+    for (const runner of scope.runners)
+      if (runner.update?.overdue)
+        alerts.push({
+          key: `update:${scope.scope}:${runner.id}`,
+          tone: "warning",
+          kind: "Update overdue",
+          title: runner.name,
+          detail: `v${runner.version} is behind v${runner.update.latest}; GitHub may stop sending it jobs`,
+          href: null,
+          since: runner.update.missing_since,
+        });
+  for (const scope of input.runners) {
+    const notice = runnerScopeNotice(scope);
+    if (notice && scope.state !== "loading")
+      alerts.push({
+        key: `scope:${scope.source}:${scope.scope}`,
+        tone: "warning",
+        kind: scope.state === "stale" ? "Stale data" : "Runners unavailable",
+        title: scope.scope,
+        detail: scope.message || "Last read failed",
+        href: null,
+        since: scope.as_of,
+      });
+  }
+  for (const source of input.sources)
+    if (!readable(source.state) && source.state !== "loading")
+      alerts.push({
+        key: `source:${source.name}`,
+        tone: "warning",
+        kind: "Source",
+        title: source.name,
+        detail: `Source is ${source.state}`,
+        href: null,
+        since: source.last_discovery_at,
+      });
+  return alerts;
 }

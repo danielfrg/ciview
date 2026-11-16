@@ -2,7 +2,9 @@
   import { Chip } from "@kenn-io/kit-ui";
   import {
     absoluteTime,
+    formatDuration,
     relativeTime,
+    safeURL,
     runnerLabel,
     runnerScopeNotice,
     runnerTone,
@@ -29,14 +31,31 @@
             <div class="runner-identity">
               <span class="runner-name">{runner.name}</span>
               {#if runner.os}<span class="runner-os">{runner.os}</span>{/if}
+              {#if runner.job}{@const jobURL = safeURL(runner.job.url)}<span class="runner-job"
+                  >Working on {#if jobURL}<a href={jobURL} target="_blank" rel="noopener noreferrer"
+                      >{runner.job.title}</a
+                    >{:else}{runner.job.title}{/if} · {formatDuration(
+                    Math.max(0, now - Date.parse(runner.job.started_at)),
+                  )}</span
+                >{/if}
             </div>
             <div class="runner-state">
               <Chip tone={runnerTone(runner, scope.state)} dot uppercase={false}
                 >{runnerLabel(runner)}</Chip
               >
+              {#if runner.update}<Chip
+                  tone={runner.update.overdue ? "danger" : "warning"}
+                  uppercase={false}
+                  title={`v${runner.update.latest} is available. Missing a release since ${absoluteTime(runner.update.missing_since)}.${runner.update.overdue ? " GitHub may stop sending jobs to a runner more than 30 days behind." : ""}`}
+                  >{runner.update.overdue ? "Update overdue" : "Update available"}</Chip
+                >{/if}
             </div>
             <div class="runner-labels">{runner.labels.join(" · ")}</div>
-            <div class="runner-version">{runner.version ? `v${runner.version}` : "—"}</div>
+            <div class="runner-version">
+              {runner.version ? `v${runner.version}` : "—"}{#if runner.update}<small
+                  >→ v{runner.update.latest}</small
+                >{/if}
+            </div>
           </article>
         {:else}
           {#if scope.state === "healthy" || scope.state === "ok"}<p class="runner-empty">

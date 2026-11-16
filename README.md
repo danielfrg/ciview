@@ -42,6 +42,10 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
 ## Usage
 
+The Overview page (`/`) summarizes runner and workflow state: counts, active
+alerts, what is running now and what is queued. `/workflows` is the full list
+and `/runners` lists each self-hosted runner.
+
 Search and filter by provider, source, repository, or latest status. Filters
 survive reloads and browser navigation. Workflow titles open provider history;
 run bars and status links open the exact run. Hover or focus a bar for details.

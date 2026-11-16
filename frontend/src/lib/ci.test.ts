@@ -593,3 +593,111 @@ test("runner scope notices describe stale and unavailable reads only", () => {
     "Runners unavailable · Runners could not be read",
   );
 });
+
+const withState = (key: string, state: RunState, extra: Partial<Run> = {}): Workflow => ({
+  ...structuredClone(workflow),
+  key,
+  name: key,
+  latest_run: { ...run, id: key, state, terminal: state !== "running" && state !== "queued", ...extra },
+});
+
+test("runner counts split working, idle and offline and set aside unreadable scopes", () => {
+  const healthy = runnerScope();
+  healthy.runners.push(
+    { ...healthy.runners[0], id: "8", name: "idle-1", busy: false },
+    { ...healthy.runners[0], id: "9", name: "off-1", status: "offline", busy: false },
+  );
+  const stale = { ...runnerScope(), source: "other", state: "stale" };
+  const unread = { ...runnerScope(), scope: "org:b", state: "unavailable", runners: [] };
+  assert.deepEqual(ci.runnerCounts([healthy, stale, unread]), {
+    total: 4,
+    working: 1,
+    idle: 1,
+    offline: 1,
+    unknown: 1,
+    unreadScopes: 2,
+  });
+  assert.deepEqual(ci.runnerCounts([]), { total: 0, working: 0, idle: 0, offline: 0, unknown: 0, unreadScopes: 0 });
+});
+
+test("workflow counts bucket the latest run state", () => {
+  const rows = [
+    withState("a", "failure"),
+    withState("b", "success"),
+    withState("c", "running"),
+    withState("d", "queued"),
+    withState("e", "waiting"),
+    withState("f", "canceled"),
+    { ...withState("g", "success"), latest_run: null },
+  ];
+  assert.deepEqual(ci.workflowCounts(rows), { total: 7, failing: 1, running: 1, queued: 2, passing: 1, other: 2 });
+});
+
+test("activity is derived from the latest running and queued runs, longest first", () => {
+  const rows = [
+    withState("new-run", "running", { created_at: "2026-10-14T12:10:00Z", started_at: "2026-10-14T12:11:00Z" }),
+    withState("old-run", "running", { created_at: "2026-10-14T11:00:00Z", started_at: null }),
+    withState("wait", "queued", { created_at: "2026-10-14T12:00:00Z" }),
+    withState("done", "success"),
+  ];
+  const activity = ci.activityFromWorkflows(rows);
+  assert.deepEqual(activity.running.map((i) => i.key), ["old-run", "new-run"]);
+  assert.equal(activity.running[1].since, "2026-10-14T12:11:00Z");
+  assert.deepEqual(activity.queued.map((i) => i.key), ["wait"]);
+  assert.equal(activity.queued[0].pool, null);
+  assert.equal(activity.queued[0].hint, null);
+});
+
+test("alerts cover offline runners, failing workflows, unreadable scopes and sources", () => {
+  const scope = runnerScope();
+  scope.runners.push({ ...scope.runners[0], id: "9", name: "off-1", status: "offline", busy: false });
+  const unread = { ...runnerScope(), scope: "org:b", state: "unavailable", message: "The token cannot list runners for this scope", runners: [] };
+  const sources = parseOverview({
+    ...overview(),
+    sources: [{ ...overview().sources[0], state: "stale" }],
+  }).sources;
+  const alerts = ci.overviewAlerts({
+    workflows: [withState("bad", "failure"), withState("good", "success")],
+    sources,
+    runners: [scope, unread],
+    activity: {
+      running: [],
+      queued: [
+        {
+          key: "q",
+          repository: "acme/api",
+          workflow: "Backup",
+          branch: "main",
+          url: "https://github.com/acme/api/actions/runs/1",
+          since: "2026-10-14T12:00:00Z",
+          pool: "self-hosted",
+          runner: null,
+          hint: { tone: "warning", text: "No online runner with label backup" },
+        },
+        { key: "q2", repository: "acme/api", workflow: "Deploy", branch: "main", url: "", since: "2026-10-14T12:00:00Z", pool: "self-hosted", runner: null, hint: { tone: "info", text: "Waiting for a busy runner" } },
+      ],
+    },
+  });
+  assert.deepEqual(
+    alerts.map((a) => [a.kind, a.title]),
+    [
+      ["Offline", "off-1"],
+      ["Queued", "acme/api - Backup"],
+      ["Failing", "example/api - bad"],
+      ["Runners unavailable", "org:b"],
+      ["Source", "github"],
+    ],
+  );
+  assert.equal(alerts[0].tone, "danger");
+  assert.equal(alerts[1].detail, "No online runner with label backup");
+  assert.equal(ci.overviewAlerts({ workflows: [], sources: [], runners: [], activity: { running: [], queued: [] } }).length, 0);
+});
+
+test("an overdue runner update raises a warning with both versions", () => {
+  const scope = runnerScope();
+  scope.runners[0].version = "2.329.0";
+  Object.assign(scope.runners[0], { update: { latest: "2.341.0", missing_since: "2026-09-01T00:00:00Z", overdue: true } });
+  const [alert] = ci.overviewAlerts({ workflows: [], sources: [], runners: [scope], activity: { running: [], queued: [] } });
+  assert.equal(alert.kind, "Update overdue");
+  assert.match(alert.detail, /v2\.329\.0.*v2\.341\.0/);
+});
