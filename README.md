@@ -7,7 +7,7 @@ accounts, and organizations in one place.
 
 **Personal project**: This is completely vibe coded for my own personal use. I won't be accepting feature requests or PRs. You're welcome to fork it and make it your own.
 
-![CI View](docs/screenshots/homepage.png)
+![CI View](docs/screenshot.png)
 
 ## Installation
 
