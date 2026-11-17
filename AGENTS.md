@@ -25,4 +25,7 @@ They are written for humans: avoid big restructures, but update them when change
 
 ## Frontend Conventions
 
+`frontend/src/design-system/` is synced from the `design-system` repo (`pnpm sync ciview`
+there). Never edit it by hand; change it in `design-system` and re-sync.
+
 `DESIGN.md` owns the theme, typography, layout, and interaction rules; read it before changing the frontend.

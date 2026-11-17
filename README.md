@@ -99,6 +99,11 @@ configured CI data, so run it on a trusted network or behind an authenticated
 proxy. Credential references are resolved on the server; tokens never reach
 the browser.
 
+## Development
+
+The frontend uses `@ui-sdk/svelte` with the shared Cadence theme. `frontend/src/design-system/`
+is synced from the `design-system` repository and is never edited by hand.
+
 ## Configuration
 
 Sources are configured in a TOML file:

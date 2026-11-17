@@ -21,7 +21,8 @@
     { id: "queued", title: "Queued", items: activity.queued, status: "queued" },
   ]);
   const place = (item: ActivityItem) =>
-    item.runner ?? (item.pool === "github-hosted" ? "GitHub-hosted" : item.pool ? "Self-hosted" : "");
+    item.runner ??
+    (item.pool === "github-hosted" ? "GitHub-hosted" : item.pool ? "Self-hosted" : "");
 </script>
 
 <div class="activity-grid">
@@ -34,7 +35,11 @@
         {#each shown as item (item.key)}
           {@const url = safeURL(item.url)}
           <article class="activity-row" aria-label={`${item.repository}, ${item.workflow}`}>
-            <i class="activity-dot" data-tone={list.id === "running" ? "running" : "waiting"} aria-hidden="true"></i>
+            <i
+              class="activity-dot"
+              data-tone={list.id === "running" ? "running" : "waiting"}
+              aria-hidden="true"
+            ></i>
             <div class="activity-main">
               <span class="activity-title"
                 >{#if url}<a href={url} target="_blank" rel="noopener noreferrer">{item.workflow}</a

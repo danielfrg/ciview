@@ -7,11 +7,11 @@
     statusLabel,
     type Workflow,
   } from "$lib/ci";
-  import { Chip, type ChipTone } from "@kenn-io/kit-ui";
+  import StatusBadge, { type BadgeTone } from "$lib/components/StatusBadge.svelte";
   import RunHistory from "./RunHistory.svelte";
   let { workflow, now }: { workflow: Workflow; now: number } = $props();
   let latest = $derived(workflow.latest_run);
-  const tones: Record<string, ChipTone> = {
+  const tones: Record<string, BadgeTone> = {
     success: "success",
     failure: "danger",
     running: "info",
@@ -43,11 +43,10 @@
     <div class="workflow-meta">
       <span class="workflow-scope"
         >{workflow.branch_scope === "all" ? "All branches" : workflow.branch_scope}</span
-      >{#if workflow.file_exists === false}<Chip
+      >{#if workflow.file_exists === false}<StatusBadge
           tone="warning"
-          uppercase={false}
           title={`Workflow file is no longer present on ${workflow.branch_scope}. Historical runs are retained.`}
-          >Not on branch</Chip
+          >Not on branch</StatusBadge
         >{/if}
     </div>
     {#if workflow.health.state !== "healthy" && workflow.health.state !== "ok"}<p
@@ -93,11 +92,11 @@
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${latest ? statusLabel(latest.state) : "No runs"}: open latest ${workflow.name} run`}
-        ><Chip tone={tones[latest?.state ?? "unknown"]} dot uppercase={false}
-          >{latest ? statusLabel(latest.state) : "No runs"}</Chip
+        ><StatusBadge tone={tones[latest?.state ?? "unknown"]} dot
+          >{latest ? statusLabel(latest.state) : "No runs"}</StatusBadge
         ></a
-      >{:else}<Chip tone={tones[latest?.state ?? "unknown"]} dot uppercase={false}
-        >{latest ? statusLabel(latest.state) : "No runs"}</Chip
+      >{:else}<StatusBadge tone={tones[latest?.state ?? "unknown"]} dot
+        >{latest ? statusLabel(latest.state) : "No runs"}</StatusBadge
       >{/if}
   </div>
 </article>
