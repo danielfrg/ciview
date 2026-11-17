@@ -17,6 +17,10 @@
   --waiting-text: light-dark(#b45309, #fbbf24);
   --neutral-text: var(--muted);
   --attention-text: var(--waiting-text);
+  /* The shared status badges use the run-state colors above. */
+  --status-success: var(--success-text);
+  --status-info: var(--running-text);
+  --status-warning: var(--waiting-text);
   /* Empty history must remain distinct from both resting and highlighted rows. */
   --empty-run: color-mix(in srgb, var(--muted) 40%, var(--paper));
   --notice: color-mix(in srgb, var(--waiting) 9%, var(--surface-1));
@@ -887,42 +891,6 @@ h1 {
 .issue-label {
   font-weight: 500;
   margin-right: 8px;
-}
-
-/* Status badge: the theme's badge, tinted by run state. */
-.status-badge {
-  gap: 6px;
-  color: var(--tone-text, var(--ink));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone, var(--line)) 45%, transparent);
-  background: color-mix(in srgb, var(--tone, transparent) 10%, transparent);
-  white-space: nowrap;
-}
-.status-dot {
-  width: 6px;
-  height: 6px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--tone, var(--neutral));
-}
-.status-badge[data-tone="success"] {
-  --tone: var(--success);
-  --tone-text: var(--success-text);
-}
-.status-badge[data-tone="danger"] {
-  --tone: var(--failure);
-  --tone-text: var(--failure-text);
-}
-.status-badge[data-tone="info"] {
-  --tone: var(--running);
-  --tone-text: var(--running-text);
-}
-.status-badge[data-tone="warning"] {
-  --tone: var(--waiting);
-  --tone-text: var(--waiting-text);
-}
-.status-badge[data-tone="neutral"] {
-  --tone: var(--neutral);
-  --tone-text: var(--neutral-text);
 }
 
 /* Empty states */

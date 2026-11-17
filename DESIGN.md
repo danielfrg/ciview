@@ -18,8 +18,9 @@ Theme and component styles come from the shared design system.
 - Preserve `scrollbar-gutter: stable`.
 - Controls come from `@ui-sdk/svelte` (one entry per component), styled by the synced Cadence
   theme in `frontend/src/design-system/`. That folder is synced from the `design-system` repo
-  and never edited by hand; app styles live in `src/app.css`, which loads before the theme, so
-  raise specificity instead of using `!important`.
+  and never edited by hand; app styles live in `src/app.css`, which `main.ts` imports last (after the
+  synced theme and custom CSS), so app rules win ties with the theme; prefer tokens and class
+  selectors over `!important`.
 - Use the theme tokens (`--ink`, `--muted`, `--line`, `--space-*`, `--radius-*`, `--mono`) and
   keep the library's default control sizes. CI run-state colors are app tokens in `app.css`.
 - Keep local components for app-specific behavior, not pass-through wrappers.

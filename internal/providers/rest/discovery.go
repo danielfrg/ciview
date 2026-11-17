@@ -1,10 +1,10 @@
 package rest
 
 import (
-	"ciview/internal/ci"
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/danielfrg/ciview/internal/ci"
 	"net/url"
 	"sort"
 	"strconv"

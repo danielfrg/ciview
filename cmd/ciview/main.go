@@ -12,15 +12,15 @@ import (
 	"syscall"
 	"time"
 
-	"ciview/internal/ci"
-	"ciview/internal/config"
-	"ciview/internal/httpapi"
-	"ciview/internal/mcp"
-	"ciview/internal/providers/forgejo"
-	"ciview/internal/providers/github"
-	"ciview/internal/refresh"
-	"ciview/internal/snapshots"
-	"ciview/internal/web"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/config"
+	"github.com/danielfrg/ciview/internal/httpapi"
+	"github.com/danielfrg/ciview/internal/mcp"
+	"github.com/danielfrg/ciview/internal/providers/forgejo"
+	"github.com/danielfrg/ciview/internal/providers/github"
+	"github.com/danielfrg/ciview/internal/refresh"
+	"github.com/danielfrg/ciview/internal/snapshots"
+	"github.com/danielfrg/ciview/internal/web"
 )
 
 func envDefault(name, fallback string) string {

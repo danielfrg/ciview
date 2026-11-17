@@ -1,10 +1,10 @@
 package github
 
 import (
-	"ciview/internal/ci"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/danielfrg/ciview/internal/ci"
 	"net/http"
 	"strings"
 	"testing"

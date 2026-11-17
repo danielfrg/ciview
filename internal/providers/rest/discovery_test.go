@@ -1,10 +1,10 @@
 package rest
 
 import (
-	"ciview/internal/ci"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/danielfrg/ciview/internal/ci"
 	"net/http"
 	"net/http/httptest"
 	"reflect"

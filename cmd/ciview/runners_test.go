@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"ciview/internal/ci"
-	"ciview/internal/config"
-	"ciview/internal/providers/github"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/config"
+	"github.com/danielfrg/ciview/internal/providers/github"
 )
 
 func TestRunnerCollectorUsesSourceTokenUnlessOverridden(t *testing.T) {

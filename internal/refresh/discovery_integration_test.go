@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"ciview/internal/ci"
-	"ciview/internal/providers/github"
-	"ciview/internal/snapshots"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/providers/github"
+	"github.com/danielfrg/ciview/internal/snapshots"
 )
 
 func TestGitHubDiscoveryRateLimitStopsRemainingSelectionsAndRunScans(t *testing.T) {

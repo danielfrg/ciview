@@ -1,10 +1,10 @@
 package mcp
 
 import (
-	"ciview/internal/ci"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/danielfrg/ciview/internal/ci"
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"strings"
 	"testing"

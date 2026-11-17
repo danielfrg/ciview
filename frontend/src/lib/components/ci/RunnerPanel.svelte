@@ -1,5 +1,5 @@
 <script lang="ts">
-  import StatusBadge from "$lib/components/StatusBadge.svelte";
+  import { StatusBadge } from "../../../design-system/custom/status-badge";
   import {
     absoluteTime,
     formatDuration,
@@ -44,6 +44,7 @@
                 >{runnerLabel(runner)}</StatusBadge
               >
               {#if runner.update}<StatusBadge
+                  dot={false}
                   tone={runner.update.overdue ? "danger" : "warning"}
                   title={`v${runner.update.latest} is available. Missing a release since ${absoluteTime(runner.update.missing_since)}.${runner.update.overdue ? " GitHub may stop sending jobs to a runner more than 30 days behind." : ""}`}
                   >{runner.update.overdue ? "Update overdue" : "Update available"}</StatusBadge

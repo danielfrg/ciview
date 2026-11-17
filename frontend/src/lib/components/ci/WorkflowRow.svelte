@@ -7,10 +7,12 @@
     statusLabel,
     type Workflow,
   } from "$lib/ci";
-  import StatusBadge, { type BadgeTone } from "$lib/components/StatusBadge.svelte";
+  import type { ComponentProps } from "svelte";
+  import { StatusBadge } from "../../../design-system/custom/status-badge";
   import RunHistory from "./RunHistory.svelte";
   let { workflow, now }: { workflow: Workflow; now: number } = $props();
   let latest = $derived(workflow.latest_run);
+  type BadgeTone = NonNullable<ComponentProps<typeof StatusBadge>["tone"]>;
   const tones: Record<string, BadgeTone> = {
     success: "success",
     failure: "danger",
@@ -44,6 +46,7 @@
       <span class="workflow-scope"
         >{workflow.branch_scope === "all" ? "All branches" : workflow.branch_scope}</span
       >{#if workflow.file_exists === false}<StatusBadge
+          dot={false}
           tone="warning"
           title={`Workflow file is no longer present on ${workflow.branch_scope}. Historical runs are retained.`}
           >Not on branch</StatusBadge

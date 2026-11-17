@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 func TestWorkflowCatalogNamesAreOptionalAndBranchScoped(t *testing.T) {

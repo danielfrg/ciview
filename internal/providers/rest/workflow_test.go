@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 func TestWorkflowFilesUseBranchAndProviderDirectories(t *testing.T) {

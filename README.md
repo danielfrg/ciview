@@ -101,11 +101,6 @@ configured CI data, so run it on a trusted network or behind an authenticated
 proxy. Credential references are resolved on the server; tokens never reach
 the browser.
 
-## Development
-
-The frontend uses `@ui-sdk/svelte` with the shared Cadence theme. `frontend/src/design-system/`
-is synced from the `design-system` repository and is never edited by hand.
-
 ## Configuration
 
 Sources are configured in a TOML file:
@@ -177,6 +172,9 @@ not remove access to cached data.
 ## Development
 
 Requires Go 1.27, Node 26, pnpm 10, and just.
+
+The frontend uses `@ui-sdk/svelte` with the shared Cadence theme. `frontend/src/design-system/`
+is synced from the `design-system` repository and is never edited by hand.
 
 Start the API and Frontend in two terminals:
 

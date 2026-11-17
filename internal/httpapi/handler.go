@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"ciview/internal/ci"
-	"ciview/internal/mcp"
-	"ciview/internal/web"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/mcp"
+	"github.com/danielfrg/ciview/internal/web"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 )

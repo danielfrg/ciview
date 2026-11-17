@@ -11,7 +11,7 @@ import (
 	"testing/fstest"
 	"time"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 type overviewReader struct {

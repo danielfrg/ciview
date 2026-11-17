@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"ciview/internal/config"
+	"github.com/danielfrg/ciview/internal/config"
 )
 
 func writeConfig(t *testing.T, token string) string {
