@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Chip } from "@kenn-io/kit-ui";
+  import { StatusBadge } from "../../../design-system/custom/status-badge";
   import {
     absoluteTime,
     formatDuration,
@@ -40,14 +40,14 @@
                 >{/if}
             </div>
             <div class="runner-state">
-              <Chip tone={runnerTone(runner, scope.state)} dot uppercase={false}
-                >{runnerLabel(runner)}</Chip
+              <StatusBadge tone={runnerTone(runner, scope.state)} dot
+                >{runnerLabel(runner)}</StatusBadge
               >
-              {#if runner.update}<Chip
+              {#if runner.update}<StatusBadge
+                  dot={false}
                   tone={runner.update.overdue ? "danger" : "warning"}
-                  uppercase={false}
                   title={`v${runner.update.latest} is available. Missing a release since ${absoluteTime(runner.update.missing_since)}.${runner.update.overdue ? " GitHub may stop sending jobs to a runner more than 30 days behind." : ""}`}
-                  >{runner.update.overdue ? "Update overdue" : "Update available"}</Chip
+                  >{runner.update.overdue ? "Update overdue" : "Update available"}</StatusBadge
                 >{/if}
             </div>
             <div class="runner-labels">{runner.labels.join(" · ")}</div>

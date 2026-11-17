@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 // ListWorkflowFiles reads the live workflow directory at an exact branch, not

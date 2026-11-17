@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 	"gopkg.in/yaml.v3"
 )
 

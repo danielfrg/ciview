@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 // Memory stores one atomically replaceable, independently owned value per repository.

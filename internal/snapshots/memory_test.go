@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 func TestMemoryReadWriteOwnsValuesAndReplacesAtomically(t *testing.T) {

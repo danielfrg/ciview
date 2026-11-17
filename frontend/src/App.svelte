@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Activity from "@lucide/svelte/icons/activity";
-  import { Button, ThemeToggle } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Preferences } from "@ui-sdk/svelte/preferences";
+  import { ThemeToggle } from "./design-system/custom/theme-toggle";
+  import { colorScheme } from "$lib/color-scheme";
   import OverviewPage from "./pages/OverviewPage.svelte";
   import RunnersPage from "./pages/RunnersPage.svelte";
   import WorkflowsPage from "./pages/WorkflowsPage.svelte";
@@ -100,58 +103,60 @@
 <svelte:head
   ><meta name="description" content="A read-only overview of GitHub and Forgejo CI." /></svelte:head
 >
-<main>
-  <header class="page-header">
-    <div class="page-brand">
-      <h1><Activity size={20} strokeWidth={1.5} aria-hidden="true" />CI View</h1>
-      <nav class="page-nav" aria-label="Pages">
-        {#each pages as page (page.route)}
-          <a
-            href={link(page.path)}
-            aria-current={route === page.route ? "page" : undefined}
-            onclick={(event) => followLink(event, go)}>{page.label}</a
-          >
-        {/each}
-      </nav>
-    </div>
-    <div class="refresh-controls">
-      <span class="refresh-status" role="status"
-        >{#if loading}{overview ? "Refreshing…" : "Loading…"}{:else if error}Overview unavailable{:else if stale}Some
-          data is stale{/if}</span
-      ><ThemeToggle /><Button
-        surface="outline"
-        class="refresh-button"
-        disabled={loading}
-        onclick={() => void load()}
-        title="Reload the cached overview">Refresh</Button
-      >
-    </div>
-  </header>
-  {#if mock}<p class="mock-banner" role="status">
-      Mock data: runners and activity are fictional (dev preview only)
-    </p>{/if}
-  {#if error}<div class="request-notice" role="alert">
-      <div>
-        <strong>{overview ? "Showing the last overview" : "Unable to load workflows"}</strong>
-        <p>{error}</p>
+<Preferences preferences={[colorScheme]}>
+  <main>
+    <header class="page-header">
+      <div class="page-brand">
+        <h1><Activity size={20} strokeWidth={1.5} aria-hidden="true" />CI View</h1>
+        <nav class="page-nav" aria-label="Pages">
+          {#each pages as page (page.route)}
+            <a
+              href={link(page.path)}
+              aria-current={route === page.route ? "page" : undefined}
+              onclick={(event) => followLink(event, go)}>{page.label}</a
+            >
+          {/each}
+        </nav>
       </div>
-      <Button onclick={() => void load()} disabled={loading}
-        >{loading ? "Retrying…" : "Retry"}</Button
-      >
-    </div>{/if}
-  {#if route === "workflows"}
-    <WorkflowsPage {overview} {loading} {now} />
-  {:else if route === "runners"}
-    <RunnersPage scopes={runnerScopes} {now} {loading} />
-  {:else}
-    <OverviewPage
-      {overview}
-      runners={runnerScopes}
-      {activity}
-      {now}
-      {loading}
-      {link}
-      onnavigate={go}
-    />
-  {/if}
-</main>
+      <div class="refresh-controls">
+        <span class="refresh-status" role="status"
+          >{#if loading}{overview ? "Refreshing…" : "Loading…"}{:else if error}Overview unavailable{:else if stale}Some
+            data is stale{/if}</span
+        ><ThemeToggle {colorScheme} /><Button
+          data-variant="outline"
+          class="refresh-button"
+          disabled={loading}
+          onclick={() => void load()}
+          title="Reload the cached overview">Refresh</Button
+        >
+      </div>
+    </header>
+    {#if mock}<p class="mock-banner" role="status">
+        Mock data: runners and activity are fictional (dev preview only)
+      </p>{/if}
+    {#if error}<div class="request-notice" role="alert">
+        <div>
+          <strong>{overview ? "Showing the last overview" : "Unable to load workflows"}</strong>
+          <p>{error}</p>
+        </div>
+        <Button onclick={() => void load()} disabled={loading}
+          >{loading ? "Retrying…" : "Retry"}</Button
+        >
+      </div>{/if}
+    {#if route === "workflows"}
+      <WorkflowsPage {overview} {loading} {now} />
+    {:else if route === "runners"}
+      <RunnersPage scopes={runnerScopes} {now} {loading} />
+    {:else}
+      <OverviewPage
+        {overview}
+        runners={runnerScopes}
+        {activity}
+        {now}
+        {loading}
+        {link}
+        onnavigate={go}
+      />
+    {/if}
+  </main>
+</Preferences>

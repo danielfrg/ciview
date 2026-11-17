@@ -2,12 +2,12 @@
 package rest
 
 import (
-	"ciview/internal/ci"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/danielfrg/ciview/internal/ci"
 	"io"
 	"net/http"
 	"net/url"

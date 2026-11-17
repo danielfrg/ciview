@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"ciview/internal/ci"
-	"ciview/internal/config"
-	"ciview/internal/snapshots"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/config"
+	"github.com/danielfrg/ciview/internal/snapshots"
 )
 
 type controlledProvider struct {

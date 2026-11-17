@@ -1,6 +1,6 @@
 <script lang="ts">
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
-  import { EmptyState } from "@kenn-io/kit-ui";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import ActivityPanel from "$lib/components/ci/ActivityPanel.svelte";
   import StatStrip, { type Stat } from "$lib/components/ci/StatStrip.svelte";
   import {
@@ -115,10 +115,14 @@
   <header class="overview-head">
     <h2 class="overview-title">Overview</h2>
     <p class="overview-subtitle">
-      {plural(wf.total, "workflow")} · {plural(repositories, "repository", "repositories")}{counts.total ||
-      runners.length
-        ? ` · ${plural(counts.total, "runner")}`
-        : ""} · Updated {relativeTime(overview.generated_at, now)}
+      {plural(wf.total, "workflow")} · {plural(
+        repositories,
+        "repository",
+        "repositories",
+      )}{counts.total || runners.length ? ` · ${plural(counts.total, "runner")}` : ""} · Updated {relativeTime(
+        overview.generated_at,
+        now,
+      )}
     </p>
   </header>
   {#if runners.length}<StatStrip label="Runners" stats={runnerStats} />{/if}

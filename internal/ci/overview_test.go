@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"ciview/internal/ci"
-	"ciview/internal/snapshots"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/snapshots"
 )
 
 type fixtureInventory struct{ state ci.Inventory }

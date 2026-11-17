@@ -554,7 +554,14 @@ export type RunnerCounts = {
 // Only fully readable scopes are trusted for busy, idle and offline; the runners of a
 // stale scope count as unknown, and a scope with no successful read has none to count.
 export function runnerCounts(scopes: RunnerScope[]): RunnerCounts {
-  const counts: RunnerCounts = { total: 0, working: 0, idle: 0, offline: 0, unknown: 0, unreadScopes: 0 };
+  const counts: RunnerCounts = {
+    total: 0,
+    working: 0,
+    idle: 0,
+    offline: 0,
+    unknown: 0,
+    unreadScopes: 0,
+  };
   for (const scope of scopes) {
     counts.total += scope.runners.length;
     if (!readable(scope.state)) {
@@ -579,7 +586,14 @@ export type WorkflowCounts = {
   other: number;
 };
 export function workflowCounts(rows: Workflow[]): WorkflowCounts {
-  const counts: WorkflowCounts = { total: rows.length, failing: 0, running: 0, queued: 0, passing: 0, other: 0 };
+  const counts: WorkflowCounts = {
+    total: rows.length,
+    failing: 0,
+    running: 0,
+    queued: 0,
+    passing: 0,
+    other: 0,
+  };
   for (const row of rows) {
     const state = row.latest_run?.state;
     if (state === "failure") counts.failing++;
@@ -597,7 +611,10 @@ export function activityFromWorkflows(rows: Workflow[]): Activity {
   const queued: ActivityItem[] = [];
   for (const row of rows) {
     const latest = row.latest_run;
-    if (!latest || (latest.state !== "running" && latest.state !== "queued" && latest.state !== "waiting"))
+    if (
+      !latest ||
+      (latest.state !== "running" && latest.state !== "queued" && latest.state !== "waiting")
+    )
       continue;
     const item: ActivityItem = {
       key: row.key,
@@ -605,7 +622,8 @@ export function activityFromWorkflows(rows: Workflow[]): Activity {
       workflow: row.name,
       branch: latest.branch,
       url: latest.url,
-      since: latest.state === "running" ? (latest.started_at ?? latest.created_at) : latest.created_at,
+      since:
+        latest.state === "running" ? (latest.started_at ?? latest.created_at) : latest.created_at,
       pool: null,
       runner: null,
       hint: null,

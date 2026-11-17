@@ -1,9 +1,9 @@
 package config
 
 import (
-	"ciview/internal/ci"
 	"errors"
 	"fmt"
+	"github.com/danielfrg/ciview/internal/ci"
 	"net/url"
 	"os"
 	"regexp"

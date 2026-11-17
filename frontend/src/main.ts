@@ -1,16 +1,9 @@
 import { mount } from "svelte";
-import { initTheme, setThemeMode } from "@kenn-io/kit-ui";
-import "@kenn-io/kit-ui/theme.css";
-import "./theme.css";
-import App from "./App.svelte";
+import "./design-system/theme/tokens.css";
+import "./design-system/theme/components.css";
+import "./design-system/custom/status-badge/status-badge.css";
+import "./design-system/custom/theme-toggle/theme-toggle.css";
 import "./app.css";
-import "./components.css";
+import App from "./App.svelte";
 
-initTheme({ storageKey: "ciview-theme" });
-// Default to charcoal while respecting explicit light and system preferences.
-try {
-  if (!localStorage.getItem("ciview-theme")) setThemeMode("dark");
-} catch {
-  setThemeMode("dark");
-}
 mount(App, { target: document.getElementById("app")! });

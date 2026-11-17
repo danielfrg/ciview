@@ -1,6 +1,6 @@
-module ciview
+module github.com/danielfrg/ciview
 
-go 1.27.0
+go 1.27.3
 
 require (
 	github.com/danielgtaylor/huma/v2 v2.39.1

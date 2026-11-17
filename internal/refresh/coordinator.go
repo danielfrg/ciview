@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"ciview/internal/ci"
-	"ciview/internal/config"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/config"
 )
 
 const repositoryConcurrency = 4

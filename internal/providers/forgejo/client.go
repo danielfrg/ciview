@@ -2,10 +2,10 @@
 package forgejo
 
 import (
-	"ciview/internal/ci"
-	"ciview/internal/providers/rest"
 	"context"
 	"encoding/json"
+	"github.com/danielfrg/ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/providers/rest"
 	"net/http"
 	"strconv"
 	"strings"

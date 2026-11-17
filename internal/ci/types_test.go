@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"ciview/internal/ci"
+	"github.com/danielfrg/ciview/internal/ci"
 )
 
 func TestModelsEncodeSnakeCaseAndEmptyArrays(t *testing.T) {

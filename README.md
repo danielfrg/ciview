@@ -5,7 +5,9 @@ A read-only GitHub Actions and Forgejo Actions viewer. Ready for self-hosting.
 Browse workflows, recent runs, timing, and status across repositories,
 accounts, and organizations in one place.
 
-![CI View](docs/screenshots/homepage.png)
+**Personal project**: This is completely vibe coded for my own personal use. I won't be accepting feature requests or PRs. You're welcome to fork it and make it your own.
+
+![CI View](docs/screenshot.png)
 
 ## Installation
 
@@ -170,6 +172,9 @@ not remove access to cached data.
 ## Development
 
 Requires Go 1.27, Node 26, pnpm 10, and just.
+
+The frontend uses `@ui-sdk/svelte` with the shared Cadence theme. `frontend/src/design-system/`
+is synced from the `design-system` repository and is never edited by hand.
 
 Start the API and Frontend in two terminals:
 

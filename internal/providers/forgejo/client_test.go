@@ -1,10 +1,10 @@
 package forgejo
 
 import (
-	"ciview/internal/ci"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/danielfrg/ciview/internal/ci"
 	"net/http"
 	"net/http/httptest"
 	"strings"

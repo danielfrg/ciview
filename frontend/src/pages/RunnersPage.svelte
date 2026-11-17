@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EmptyState } from "@kenn-io/kit-ui";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import RunnerPanel from "$lib/components/ci/RunnerPanel.svelte";
   import type { RunnerScope } from "$lib/ci";
   let { scopes, now, loading }: { scopes: RunnerScope[]; now: number; loading: boolean } = $props();
